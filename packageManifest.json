@@ -1,0 +1,22 @@
+{
+  "packageName": "Shelly PLUS 2/2.5 as Roller Shutter",
+  "author": "SebyM",
+  "minimumHEVersion": "0.0",
+  "dateReleased": "2023-03-20",
+  "drivers": [
+    {
+      "id": "691bbda1-e5cf-4d77-a82e-660f23390fc2",
+      "name": "Shelly PLUS 2/2.5 as Roller Shutter",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/myL2_Shelly_PLUS_2_as_Roller_Shutter.groovy",
+      "required": false
+    },
+    {
+      "id": "bf29de9f-7728-4ad9-b421-a14f2ffd30b4",
+      "name": "Virtual Energy Meter",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/myL2_Virtual_Energy_Meter_1316.groovy",
+      "required": false
+    }
+  ]
+}
