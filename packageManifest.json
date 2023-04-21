@@ -17,6 +17,13 @@
       "namespace": "myL2",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/myL2_Virtual_Energy_Meter_1316.groovy",
       "required": false
+    },
+    {
+      "id": "d840e791-993f-4d27-ace5-79318c778876",
+      "name": "Shelly Plus",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/myL2_ShellyPlusQuiet.groovy",
+      "required": false
     }
   ]
 }
