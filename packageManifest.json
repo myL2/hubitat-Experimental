@@ -24,6 +24,24 @@
       "namespace": "myL2",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/myL2_ShellyPlusQuiet.groovy",
       "required": false
+    },
+    {
+      "id": "42640f1d-f9a1-4db7-9c76-fba5bca860ef",
+      "name": "Shelly Plus 2nd Gen",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/myL2_Shelly_Plus_2nd_Gen.groovy",
+      "required": false
+    }
+  ],
+  "apps": [
+    {
+      "id": "af8b0624-c1eb-4c6a-82a9-c7b0273116b9",
+      "name": "Shelly Plus 2nd Gen Quick Setup",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/myL2_Shelly_Plus_2nd_Gen_Quick_Setup.groovy",
+      "required": false,
+      "oauth": false,
+      "primary": false
     }
   ]
 }
