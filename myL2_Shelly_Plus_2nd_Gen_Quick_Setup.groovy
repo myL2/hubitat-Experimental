@@ -19,7 +19,7 @@ def pageSetup() {
         section() {
             input "deviceLabel", "text", title: "New device label",default: "",description:"Enter the nice name of the device", required:true
             input "deviceIP", "text", title: "New device IP Address",description:"Make sure the IP is Reserved on your router.", required:true
-            input "deviceChannel", "text", title: "New device Channel",description:"0,1,2,3...", required:true
+            input "deviceChannels", "text", title: "New device Number of Channels",description:"1/2/3/4", required:true
         }
       }
 }
@@ -39,8 +39,7 @@ def pageWork(){
             ]
         )
         newDevice.updateSetting("ip",[type:"string", value: deviceIP])
-        newDevice.updateSetting("channel",[type:"number", value: deviceChannel])
-        newDevice.updateSetting("protect",[type:"enum", value: "No"])
+        newDevice.updateSetting("channels",[type:"number", value: deviceChannels])
         newDevice.updateSetting("refresh_Rate",[type:"enum", value: "manual"])
         
         newDevice.updated()
