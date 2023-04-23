@@ -31,6 +31,13 @@
       "namespace": "myL2",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/myL2_Shelly_Plus_2nd_Gen.groovy",
       "required": false
+    },
+    {
+      "id": "2fa81345-ed22-46db-a219-979a6935f795",
+      "name": "Shelly Plus 2nd Gen Child",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/myL2_Shelly_Plus_2nd_Gen_Child.groovy",
+      "required": false
     }
   ],
   "apps": [
