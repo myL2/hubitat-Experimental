@@ -212,7 +212,7 @@ def parse(values){
     
     def ss = s[1].replace("/switch/","").split('/')
 
-    log.info ss
+    //log.info ss
 
     def channelNo = ss[0]
     def channelState = ss[1]
@@ -221,7 +221,7 @@ def parse(values){
         String thisId = device.deviceNetworkId
         child = getChildDevice("${thisId}-${channelNo}")
         if (child) {
-            log.debug "Updating ${child} to ${channelState}"
+            log.debug "${child} is now ${channelState}"
             child.updateRelayState(channelState)
         }else{
             log.debug "Got a request for a child that does not exist: ${ss}"

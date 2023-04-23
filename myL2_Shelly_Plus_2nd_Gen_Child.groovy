@@ -120,9 +120,12 @@ def off() {
 def sendSwitchCommand(action) {
     def params = [uri: "http://${username}:${password}@${ip}/${action}"]
     try {
-        httpGet(params)
+        httpGet(params) {
+            resp -> resp.headers.each {
+            }
+        } 
     } catch (e) {
         log.error "something went wrong: $e"
     }
-    //runInMillis(1200, refresh)
 }
+
