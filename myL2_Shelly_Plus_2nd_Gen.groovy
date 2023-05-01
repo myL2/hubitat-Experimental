@@ -231,7 +231,19 @@ def parse(values){
 }
 
 def uploadScript(){
-    code = "Shelly.addStatusHandler(function(event) {if (event.name === \"switch\"){let url = \"http://192.168.100.160:39501/switch/\" + JSON.stringify(event.id) + \"/\" + (event.delta.output?\"on\":\"off\") + \"/\";Shelly.call(\"HTTP.GET\", {\"url\": url});}});";
+/*
+Clean code:
+
+Shelly.addStatusHandler(function(event) {
+if (event.name === "switch"){
+let url = "http://HUB_IP:39501/switch/" + JSON.stringify(event.id) + "/" + (event.delta.output?"on":"off") + "/";Shelly.call("HTTP.GET", {"url": url});
+}});
+
+
+*/
+
+    
+    code = "Shelly.addStatusHandler(function(event) {if (event.name === \"switch\"){let url = \"http://HUB_IP:39501/switch/\" + JSON.stringify(event.id) + \"/\" + (event.delta.output?\"on\":\"off\") + \"/\";Shelly.call(\"HTTP.GET\", {\"url\": url});}});";
     uri = "http://${ip}/rpc/Script.PutCode"
     def postParams = [
         uri: uri,
