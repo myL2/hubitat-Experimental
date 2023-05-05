@@ -78,9 +78,9 @@ def refresh(){
         httpGet(params) {
             resp -> resp.headers.each {    }
             obs = resp.data
-
-            state.RelayChannel = channel
-            sendEvent(name: "voltage", value: obs.voltage)
+            if(obs.voltage != null){
+                sendEvent(name: "voltage", value: obs.voltage)
+            }
 
             if (obs.temperature.tC != null){
                 if (state.temp_scale == "C") sendEvent(name: "temperature", value: obs.temperature.tC)
@@ -94,16 +94,17 @@ def refresh(){
                 sendEvent(name: "switch", value: "off")
             }
 
-            // Power Meters
-            power = obs.apower
-            sendEvent(name: "power", unit: "W", value: power)
+            if(obs.apower != null){
+                power = obs.apower
+                sendEvent(name: "power", unit: "W", value: power)
+            }
 
         } // End try
     } catch (e) {
         log.error "something went wrong: $e"
     }
 
-} // End Refresh Status
+}
 
 def updateRelayState(newState){
     sendEvent(name: "switch", value: newState)
@@ -120,9 +121,12 @@ def off() {
 def sendSwitchCommand(action) {
     def params = [uri: "http://${username}:${password}@${ip}/${action}"]
     try {
-        httpGet(params)
+        httpGet(params) {
+            resp -> resp.headers.each {
+            }
+        } 
     } catch (e) {
         log.error "something went wrong: $e"
     }
-    //runInMillis(1200, refresh)
 }
+
