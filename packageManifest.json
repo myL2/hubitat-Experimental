@@ -8,35 +8,63 @@
       "id": "691bbda1-e5cf-4d77-a82e-660f23390fc2",
       "name": "Shelly PLUS 2/2.5 as Roller Shutter",
       "namespace": "myL2",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/myL2_Shelly_PLUS_2_as_Roller_Shutter.groovy",
-      "required": false
-    },
-    {
-      "id": "bf29de9f-7728-4ad9-b421-a14f2ffd30b4",
-      "name": "Virtual Energy Meter",
-      "namespace": "myL2",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/myL2_Virtual_Energy_Meter_1316.groovy",
-      "required": false
-    },
-    {
-      "id": "d840e791-993f-4d27-ace5-79318c778876",
-      "name": "Shelly Plus",
-      "namespace": "myL2",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/myL2_ShellyPlusQuiet.groovy",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Shelly/myL2_Shelly_PLUS_2_as_Roller_Shutter.groovy",
       "required": false
     },
     {
       "id": "42640f1d-f9a1-4db7-9c76-fba5bca860ef",
       "name": "Shelly Plus 2nd Gen",
       "namespace": "myL2",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/myL2_Shelly_Plus_2nd_Gen.groovy",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Shelly/myL2_Shelly_Plus_2nd_Gen.groovy",
       "required": false
     },
     {
       "id": "2fa81345-ed22-46db-a219-979a6935f795",
       "name": "Shelly Plus 2nd Gen Child",
       "namespace": "myL2",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/myL2_Shelly_Plus_2nd_Gen_Child.groovy",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Shelly/myL2_Shelly_Plus_2nd_Gen_Child.groovy",
+      "required": false
+    },
+    {
+      "id": "96a26724-8762-4115-9604-9f2c39683bd6",
+      "name": "Zigbee - Aqara Water Leak Sensor",
+      "namespace": "oh-lalabs.com",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Xiaomi/zigbee-aqara-water-leak-sensor-expanded.groovy",
+      "required": false
+    },
+    {
+      "id": "69756074-c8b1-4fe0-b29f-1f104b19e291",
+      "name": "Zigbee - Xiaomi/Aqara Motion Sensor",
+      "namespace": "oh-lalabs.com",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Xiaomi/zigbee-xiaomi-aqara-motion-sensor-expanded.groovy",
+      "required": false
+    },
+    {
+      "id": "4bd1ddc8-d7f1-45e4-8c78-e22d5e44dc8e",
+      "name": "Zigbee - Xiaomi/Aqara Temperature & Humidity Sensor",
+      "namespace": "oh-lalabs.com",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Xiaomi/zigbee-xiaomi-aqara-temperature-humidity-expanded.groovy",
+      "required": false
+    },
+    {
+      "id": "8b3cf382-8df7-4d70-b3b3-97424334cb1a",
+      "name": "Zigbee - Xiaomi/Aqara/Opple Button/Switch/Remote",
+      "namespace": "oh-lalabs.com",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Xiaomi/zigbee-xiaomi-aqara-opple-button-switch-remote-expanded.groovy",
+      "required": false
+    },
+    {
+      "id": "96019d7e-00ca-4e92-858b-4cb3be3ff751",
+      "name": "Zigbee - Xiaomi Mijia Smart Light Sensor (Zigbee 3.0)",
+      "namespace": "oh-lalabs.com",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Xiaomi/zigbee-xiaomi-mijia-smart-light-sensor-expanded.groovy",
+      "required": false
+    },
+    {
+      "id": "a565b028-7692-4999-8151-248ed8cd4b5a",
+      "name": "Smartly Inject",
+      "namespace": "oh-lalabs.com",
+      "location": "https://raw.githubusercontent.com/markus-li/Hubitat/release/drivers/expanded/smartly-inject-expanded.groovy",
       "required": false
     }
   ],
@@ -45,10 +73,27 @@
       "id": "af8b0624-c1eb-4c6a-82a9-c7b0273116b9",
       "name": "Shelly Plus 2nd Gen Quick Setup",
       "namespace": "myL2",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/myL2_Shelly_Plus_2nd_Gen_Quick_Setup.groovy",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Shelly/myL2_Shelly_Plus_2nd_Gen_Quick_Setup.groovy",
       "required": false,
       "oauth": false,
       "primary": false
+    }
+  ],
+  "files": [
+    {
+      "id": "c63c1bf4-385c-4461-aa6e-0adcf720027d",
+      "name": null,
+      "location": "https://raw.githubusercontent.com/markus-li/Hubitat/release/assets/smartly.js"
+    },
+    {
+      "id": "87c57b76-d03e-4a42-b0f4-9444458dac6a",
+      "name": null,
+      "location": "https://raw.githubusercontent.com/markus-li/Hubitat/release/assets/smartly-injected.min.css"
+    },
+    {
+      "id": "f35d492e-57cb-4c24-b770-eeea2cca92c5",
+      "name": null,
+      "location": "https://raw.githubusercontent.com/markus-li/Hubitat/release/assets/usermode.json"
     }
   ]
 }
