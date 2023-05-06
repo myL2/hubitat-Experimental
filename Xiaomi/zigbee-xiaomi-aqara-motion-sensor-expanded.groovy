@@ -72,14 +72,13 @@ metadata {
         
         command "test"
 
-        fingerprint deviceJoinName: "Xiaomi Motion Sensor (RTCGQ01LM)", model: "lumi.sensor_motion", profileId: "0104", deviceId: "0104", inClusters: "0000,0003,FFFF,0019", outClusters: "0000,0004,0003,0006,0008,0005,0019", manufacturer: "LUMI", endpointId: "01"
+        // fingerprint deviceJoinName: "Xiaomi Motion Sensor (RTCGQ01LM)", model: "lumi.sensor_motion", profileId: "0104", deviceId: "0104", inClusters: "0000,0003,FFFF,0019", outClusters: "0000,0004,0003,0006,0008,0005,0019", manufacturer: "LUMI", endpointId: "01"
 
         fingerprint deviceJoinName: "Aqara Motion Sensor (RTCGQ11LM) v1", model: "lumi.sensor_motion.aq2", endpointId: "01", profileId: "0104", deviceId: "0107", inClusters: "0000,FFFF,0406,0400", outClusters: "0000,0019", manufacturer: "LUMI"
-		    fingerprint deviceJoinName: "Aqara Motion Sensor (RTCGQ11LM) v2", model: "lumi.sensor_motion.aq2", endpointId: "01", profileId: "0104", deviceId: "0107", inClusters: "0000,FFFF,0406,0400,0500,0001,0003", outClusters: "0000,0019", manufacturer: "LUMI"
+	fingerprint deviceJoinName: "Aqara Motion Sensor (RTCGQ11LM) v2", model: "lumi.sensor_motion.aq2", endpointId: "01", profileId: "0104", deviceId: "0107", inClusters: "0000,FFFF,0406,0400,0500,0001,0003", outClusters: "0000,0019", manufacturer: "LUMI"
 
-        fingerprint profileId:"0104", endpointId:"01", inClusters:"0000,0406,0003,0001", outClusters:"0003,0019", model:"lumi.motion.agl02", manufacturer:"LUMI" 
-
-        fingerprint deviceJoinName: "Aqara High Precision Motion Sensor (RTCGQ13LM)", model:"lumi.motion.agl04", manufacturer:"LUMI", profileId:"0104", endpointId:"01", inClusters:"null", outClusters:"null", application:"19"
+        // fingerprint profileId:"0104", endpointId:"01", inClusters:"0000,0406,0003,0001", outClusters:"0003,0019", model:"lumi.motion.agl02", manufacturer:"LUMI" 
+        // fingerprint deviceJoinName: "Aqara High Precision Motion Sensor (RTCGQ13LM)", model:"lumi.motion.agl04", manufacturer:"LUMI", profileId:"0104", endpointId:"01", inClusters:"null", outClusters:"null", application:"19"
 
     }
 
