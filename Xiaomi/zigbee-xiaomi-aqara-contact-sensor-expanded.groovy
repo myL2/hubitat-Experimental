@@ -92,7 +92,8 @@ metadata {
         // END:  getMetadataPreferencesForRecoveryMode(defaultMode="Normal")
         // BEGIN:getMetadataPreferencesForZigbeeDevicesWithBattery()
         input(name: "vMinSetting", type: "decimal", title: styling_addTitleDiv("Battery Minimum Voltage"), description: styling_addDescriptionDiv("Voltage when battery is considered to be at 0% (default = 2.8V)"), defaultValue: "2.8", range: "2.1..2.8")
-        input(name: "vMaxSetting", type: "decimal", title: styling_addTitleDiv("Battery Maximum Voltage"), description: styling_addDescriptionDiv("Voltage when battery is considered to be at 100% (default = 3.2V)"), defaultValue: "3.2", range: "2.9..3.4")        // END:  getMetadataPreferencesForZigbeeDevicesWithBattery()
+        input(name: "vMaxSetting", type: "decimal", title: styling_addTitleDiv("Battery Maximum Voltage"), description: styling_addDescriptionDiv("Voltage when battery is considered to be at 100% (default = 3.2V)"), defaultValue: "3.2", range: "2.9..3.4")
+	// END:  getMetadataPreferencesForZigbeeDevicesWithBattery()
         // BEGIN:getDefaultMetadataPreferencesForContactSensor()
         input(name: "invertContact", type: "bool", title: styling_addTitleDiv("Invert open/close"), description: styling_addDescriptionDiv("When open show as closed and vice versa (default: false)"), defaultValue: false)
         input(name: "btnDevice1", type: "enum", title: styling_addTitleDiv("Child Device for the contact sensor"),
