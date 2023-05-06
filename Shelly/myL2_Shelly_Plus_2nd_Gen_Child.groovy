@@ -33,6 +33,7 @@ metadata {
     )
     {
         capability "Actuator"
+        capability "EnergyMeter"
         capability "Sensor"
         capability "Refresh"
         capability "Switch"
@@ -42,6 +43,12 @@ metadata {
         capability "SignalStrength"
         capability "TemperatureMeasurement"
         capability "VoltageMeasurement"
+
+        attribute "lastPowerUpdate", "number"
+        attribute "lastPowerValue", "number"
+        attribute "energyExact", "number"
+        
+        command "resetEnergy"
     }
 
     preferences {
@@ -54,10 +61,12 @@ metadata {
 
 def initialize() {
     log.info "Shelly Plus 2nd Gen/Child/Initialize"
+    resetEnergy()
 }
 
 def installed() {
     log.debug "Shelly Plus 2nd Gen/Child/Installed"
+    resetEnergy()
 }
 
 def uninstalled() {
@@ -97,6 +106,7 @@ def refresh(){
             if(obs.apower != null){
                 power = obs.apower
                 sendEvent(name: "power", unit: "W", value: power)
+                updateEnergy(power)
             }
 
         } // End try
@@ -106,8 +116,20 @@ def refresh(){
 
 }
 
+def resetEnergy(){
+    sendEvent(name: "lastPowerValue", value: 0)
+    sendEvent(name: "energy", value: 0)
+    sendEvent(name: "energyExact", value: 0)
+    sendEvent(name: "lastPowerUpdate", value: now())
+}
+
 def updateRelayState(newState){
     sendEvent(name: "switch", value: newState)
+}
+
+def updateRelayPower(newPower){
+    sendEvent(name: "power", value: newPower)
+    updateEnergy(Float.parseFloat(newPower))
 }
 
 def on() {
@@ -130,3 +152,20 @@ def sendSwitchCommand(action) {
     }
 }
 
+
+def setEnergy(float energy) {
+    sendEvent(name: "energyExact", value: energy)
+    sendEvent(name: "energy", value: Math.round(energy*100)/100)
+}
+
+def updateEnergy(float power) {
+    r = (now() - device.currentValue("lastPowerUpdate")) / 1000
+    p = device.currentValue("lastPowerValue")
+    energy = device.currentValue("energyExact")
+    newEnergy = (energy + (p/1000/60/60*r))
+    log.debug "VEM: $r time passed, power was $power, lastPower was $p, energy was $energy, newEnergy is $newEnergy"
+    sendEvent(name: "energyExact", value: newEnergy)
+    sendEvent(name: "energy", value: Math.round(newEnergy*100)/100)
+    sendEvent(name: "lastPowerValue", value: power)
+    sendEvent(name: "lastPowerUpdate", value: now())
+}
