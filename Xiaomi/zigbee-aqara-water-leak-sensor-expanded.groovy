@@ -93,7 +93,7 @@ metadata {
         input(name: "vMinSetting", type: "decimal", title: styling_addTitleDiv("Battery Minimum Voltage"), description: styling_addDescriptionDiv("Voltage when battery is considered to be at 0% (default = 2.8V)"), defaultValue: "2.8", range: "2.1..2.8")
         input(name: "vMaxSetting", type: "decimal", title: styling_addTitleDiv("Battery Maximum Voltage"), description: styling_addDescriptionDiv("Voltage when battery is considered to be at 100% (default = 3.2V)"), defaultValue: "3.2", range: "2.9..3.4")
         // END:  getMetadataPreferencesForZigbeeDevicesWithBattery()
-        input(name: "logWetDryDatetime", type: "bool", title: styling_addTitleDiv("Log Wet/Dry Time"), description: styling_addDescriptionDiv("Logs the date and time of when the last Wet/Dry event occured (default: false)"), defaultValue: false)
+        input(name: "logWetDryDatetime", type: "bool", title: styling_addTitleDiv("Log Wet/Dry Time"), description: styling_addDescriptionDiv("Logs the date and time of when the last Wet/Dry event occured (default: true)"), defaultValue: true)
 	}
 }
 
