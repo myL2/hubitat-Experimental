@@ -193,36 +193,27 @@ private dbCleanUp() {
 }
 
 def parse(values){
-    //log.debug values
-
     def original = "{\""+values.replace(":","\":\"").replace(", ","\",\"")+"-\"}"
-    //log.info original
-    
     def json = new JsonSlurper().parseText(original)
-    
-    //log.info json.headers
-    
     def header = new String(json.headers.decodeBase64())
-  
-    //log.info header
-    
     def s = header.split(' ')
-        
-    //log.info s[1]
-    
-    def ss = s[1].replace("/switch/","").split('/')
-
-    //log.info ss
-
-    def channelNo = ss[0]
-    def channelState = ss[1]
+    def ss = s[1].split('/')
+    def channelNo = ss[2]
+    def channelValue = ss[3]
 
     if (channels) {
         String thisId = device.deviceNetworkId
         child = getChildDevice("${thisId}-${channelNo}")
         if (child) {
-            log.debug "${child} is now ${channelState}"
-            child.updateRelayState(channelState)
+            if(debugOutput) log.debug "${child} is now ${channelValue}"
+            switch (ss[1]){
+                case "switch":
+                child.updateRelayState(channelValue)
+                break;
+                case "power":
+                child.updateRelayPower(channelValue)
+                break;
+            }
         }else{
             log.debug "Got a request for a child that does not exist: ${ss}"
         }
@@ -231,43 +222,42 @@ def parse(values){
 }
 
 def uploadScript(){
-/*
-Clean code:
-
-Shelly.addStatusHandler(function(event) {
-if (event.name === "switch"){
-let url = "http://HUB_IP:39501/switch/" + JSON.stringify(event.id) + "/" + (event.delta.output?"on":"off") + "/";Shelly.call("HTTP.GET", {"url": url});
-}});
-
-
-*/
-
-    
-    code = "Shelly.addStatusHandler(function(event) {if (event.name === \"switch\"){let url = \"http://HUB_IP:39501/switch/\" + JSON.stringify(event.id) + \"/\" + (event.delta.output?\"on\":\"off\") + \"/\";Shelly.call(\"HTTP.GET\", {\"url\": url});}});";
-    uri = "http://${ip}/rpc/Script.PutCode"
-    def postParams = [
-        uri: uri,
-        requestContentType: 'text/html',
-        contentType: 'application/octet-stream',
-        body: ['code' : java.net.URLEncoder.encode(code), 'id': 1, 'append': false]
+    def chunks=[
+        [id: 1, append: true, code: "\"let minThreshold=10;\\nlet lastPower=0;\\nlet baseUrl='http://192.168.100.160:39501/';\\nShelly.addStatusHandler(function(event) {\\nif (event.name===\\\"switch\\\"){\\n \""],
+        [id: 1, append: true, code: "\"if(typeof(event.delta.output)!==\\\"undefined\\\"){\\n  let url=baseUrl+'switch/'+JSON.stringify(event.id)+'/'+\""],
+        [id: 1, append: true, code: "\"(event.delta.output?\\\"on\\\":\\\"off\\\")+\\\"/\\\"; Shelly.call(\\\"HTTP.GET\\\", {\\\"url\\\": url});\\n }\\n\""],
+        [id: 1, append: true, code: "\" if (typeof event.delta.apower!==\\\"undefined\\\"){\\n  if (Math.abs(event.delta.apower-lastPower)>minThreshold){\\n   lastPower=event.delta.apower;\\n\""],
+        [id: 1, append: true, code: "\"   let url=baseUrl+'power/'+JSON.stringify(event.id)+\\\"/\\\"+JSON.stringify(event.delta.apower)+\\\"/\\\"; Shelly.call(\\\"HTTP.GET\\\", {\\\"url\\\": url});\\n  }\\n }\\n}});\"\""],
     ]
-/*
-The original request as per https://github.com/ALLTERCO/shelly-script-examples/blob/main/tools/put_script.py:
-req = {"id": id_, "code": data, "append": append}
-req_data = json.dumps(req, ensure_ascii=False)
-res = requests.post(url, data=req_data.encode("utf-8"), timeout=2)
-log.info res.json()
-*/
-    log.info postParams
-    try{
-        asynchttpPost('myCallbackMethod', postParams)
-    }catch (e){
-        log.debug e.message
-    }
+    sendScriptCmd("http://${ip}/rpc/Script.Delete", [id: 1]);
+    sendScriptCmd("http://${ip}/rpc/Script.Create?", [:]);
+    sendScriptCmd("http://${ip}/rpc/Script.PutCode",chunks[0]);
+    sendScriptCmd("http://${ip}/rpc/Script.PutCode",chunks[1]);
+    sendScriptCmd("http://${ip}/rpc/Script.PutCode",chunks[2]);
+    sendScriptCmd("http://${ip}/rpc/Script.PutCode",chunks[3]);
+    sendScriptCmd("http://${ip}/rpc/Script.PutCode",chunks[4]);
+    sendScriptCmd("http://${ip}/rpc/Script.SetConfig",[id: 1, config: "{enable:true, name:\"Hubitat\"}"]);
+    sendScriptCmd("http://${ip}/rpc/Script.Start", [id: 1]);
+    log.debug "Script upload finished"
 }
 
-def myCallbackMethod(response, data) {
-    log.debug "status of post call is: ${response.status}"
+def sendScriptCmd(uri, args){
+    def params = [
+        uri: uri,
+        requestContentType: 'text/html',
+        query: args
+    ]
+    //log.info params
+    try{
+        httpGet(params) {
+            resp -> resp.headers.each {
+                //log.debug "Response: ${it.name} : ${it.value}"
+            }
+        }
+    }catch (e){
+        log.debug "Err: " + e.message
+        log.debug "Err response: " + e.response.getData()
+    }
 }
 
 def refresh(){
@@ -283,7 +273,7 @@ def refresh(){
         }
     }
 
-} // End Refresh Status
+}
 
 def getWiFi(){
     logDebug "WiFi Status called"
@@ -329,7 +319,7 @@ def getWiFi(){
         log.error "something went wrong: $e"
     }
 
-} // End Wifi Status
+}
 
 def getDeviceInfo(){
 
@@ -361,7 +351,7 @@ def getDeviceInfo(){
         log.error "something went wrong: $e"
     }
 
-} // End Device Info
+}
 
 def getGetConfig(){
 
@@ -386,7 +376,7 @@ def getGetConfig(){
         log.error "something went wrong: $e"
     }
 
-} // End sys get config
+}
 
 def CheckForUpdate() {
     if (txtEnable) log.info "Check Device FW"
@@ -455,7 +445,6 @@ private logDebug(msg) {
     }
 }
 
-// handle commands
 //RK Updated to include last refreshed
 def poll() {
     if (locale == "UK") {
