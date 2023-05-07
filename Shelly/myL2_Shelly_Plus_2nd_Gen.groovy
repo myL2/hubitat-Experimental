@@ -218,7 +218,7 @@ def disableApAndBt(){
 
 def uploadScripts(){
     def chunks=[
-        [id: 1, append: true, code: "\"let minThreshold=10;\\nlet lastPower=0;\\nlet baseUrl='http://192.168.100.160:39501/';\\nShelly.addStatusHandler(function(event) {\\nif (event.name===\\\"switch\\\"){\\n \""],
+        [id: 1, append: true, code: "\"let minThreshold=10;\\nlet lastPower=0;\\nlet baseUrl='http://${location.hub.localIP}:39501/';\\nShelly.addStatusHandler(function(event) {\\nif (event.name===\\\"switch\\\"){\\n \""],
         [id: 1, append: true, code: "\"if(typeof(event.delta.output)!==\\\"undefined\\\"){\\n  let url=baseUrl+'switch/'+JSON.stringify(event.id)+'/'+\""],
         [id: 1, append: true, code: "\"(event.delta.output?\\\"on\\\":\\\"off\\\")+\\\"/\\\"; Shelly.call(\\\"HTTP.GET\\\", {\\\"url\\\": url});\\n }\\n\""],
         [id: 1, append: true, code: "\" if (typeof event.delta.apower!==\\\"undefined\\\"){\\n  if (Math.abs(event.delta.apower-lastPower)>minThreshold){\\n   lastPower=event.delta.apower;\\n\""],
