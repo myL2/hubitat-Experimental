@@ -56,22 +56,23 @@ metadata {
         input("channel", "number", title:"Channel", description:"Child device Channel" , required: true)
         input name: "username", type: "text", title: "Username:", description: "(blank if none)", required: false
         input name: "password", type: "password", title: "Password:", description: "(blank if none)", required: false
+        input name: "debugOutput", type: "bool", title: "Enable debug logging?", defaultValue: false
     }
 }
 
 def initialize() {
-    log.info "Shelly Plus 2nd Gen/Child/Initialize"
+    logDebug "Shelly Plus 2nd Gen/Child/Initialize"
     resetEnergy()
 }
 
 def installed() {
-    log.debug "Shelly Plus 2nd Gen/Child/Installed"
+    logDebug "Shelly Plus 2nd Gen/Child/Installed"
     resetEnergy()
 }
 
 def uninstalled() {
     unschedule()
-    log.debug "Shelly Plus 2nd Gen/Child/Uninstalled"
+    logDebug "Shelly Plus 2nd Gen/Child/Uninstalled"
 }
 
 def updated() {
@@ -163,9 +164,15 @@ def updateEnergy(float power) {
     p = device.currentValue("lastPowerValue")
     energy = device.currentValue("energyExact")
     newEnergy = (energy + (p/1000/60/60*r))
-    log.debug "VEM: $r time passed, power was $power, lastPower was $p, energy was $energy, newEnergy is $newEnergy"
+    logDebug "updateEnergy: $r time passed, power was $power, lastPower was $p, energy was $energy, newEnergy is $newEnergy"
     sendEvent(name: "energyExact", value: newEnergy)
     sendEvent(name: "energy", value: Math.round(newEnergy*100)/100)
     sendEvent(name: "lastPowerValue", value: power)
     sendEvent(name: "lastPowerUpdate", value: now())
+}
+
+private logDebug(msg) {
+    if (settings?.debugOutput || settings?.debugOutput == null) {
+        log.debug "$msg"
+    }
 }
