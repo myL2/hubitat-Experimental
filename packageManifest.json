@@ -66,6 +66,13 @@
       "namespace": "oh-lalabs.com",
       "location": "https://raw.githubusercontent.com/markus-li/Hubitat/release/drivers/expanded/smartly-inject-expanded.groovy",
       "required": false
+    },
+    {
+      "id": "b8b5a5d7-cfa5-40af-9198-95ce6dff2d31",
+      "name": "Zemismart ZigBee Wall Switch Multi-Gang",
+      "namespace": "muxa",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/SmartWise/zemismart-zigbee-multigang-switch.groovy",
+      "required": false
     }
   ],
   "apps": [
