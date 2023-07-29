@@ -73,6 +73,20 @@
       "namespace": "muxa",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/SmartWise/zemismart-zigbee-multigang-switch.groovy",
       "required": false
+    },
+    {
+      "id": "88a58f33-d5e3-49be-b862-421f78d61f8a",
+      "name": "Notification Proxy Device",
+      "namespace": "RMoRobert",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/NotificationProxy.groovy",
+      "required": false
+    },
+    {
+      "id": "4e55fb6a-8c8c-4f8c-9d4d-885abad05dba",
+      "name": "Tuya Zigbee Smoke Detector",
+      "namespace": "kkossev",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/SmartWise/Tuya_Zigbee_Smoke_Detector.groovy",
+      "required": false
     }
   ],
   "apps": [
@@ -90,6 +104,15 @@
       "name": "Shelly Plus 2nd Gen WiFi Config",
       "namespace": "myL2",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Shelly/myL2_Shelly_Plus_2nd_Gen_WiFi_Config.groovy",
+      "required": false,
+      "oauth": false,
+      "primary": false
+    },
+    {
+      "id": "3ffd6585-3271-4a4b-8d50-226645569b13",
+      "name": "Notification Proxy",
+      "namespace": "RMoRobert",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/NotificationProxyApp.groovy",
       "required": false,
       "oauth": false,
       "primary": false
