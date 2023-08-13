@@ -87,6 +87,13 @@
       "namespace": "kkossev",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/SmartWise/Tuya_Zigbee_Smoke_Detector.groovy",
       "required": false
+    },
+    {
+      "id": "f912d0d6-d9ba-428a-8b29-41fd02763389",
+      "name": "Zigbee - Xiaomi/Aqara Contact Sensor",
+      "namespace": "oh-lalabs.com",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Xiaomi/zigbee-xiaomi-aqara-contact-sensor-expanded.groovy",
+      "required": false
     }
   ],
   "apps": [
