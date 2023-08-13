@@ -105,9 +105,9 @@ def refresh(){
             }
 
             if(obs.apower != null){
-                power = obs.apower
-                sendEvent(name: "power", unit: "W", value: power)
-                updateEnergy(power)
+                powerValue = Math.round(obs.apower*100)/100
+                sendEvent(name: "power", unit: "W", value: powerValue)
+                updateEnergy(powerValue)
             }
 
         } // End try
@@ -129,8 +129,9 @@ def updateRelayState(newState){
 }
 
 def updateRelayPower(newPower){
-    sendEvent(name: "power", value: newPower)
-    updateEnergy(Float.parseFloat(newPower))
+    powerValue = Float.parseFloat(newPower)
+    sendEvent(name: "power", value: Math.round(powerValue*100)/100)
+    updateEnergy(powerValue)
 }
 
 def on() {
