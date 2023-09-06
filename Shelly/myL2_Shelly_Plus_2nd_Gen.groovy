@@ -224,6 +224,7 @@ def uploadScripts(){
         [id: 1, append: true, code: "\" if (typeof event.delta.apower!==\\\"undefined\\\"){\\n  if (Math.abs(event.delta.apower-lastPower)>minThreshold){\\n   lastPower=event.delta.apower;\\n\""],
         [id: 1, append: true, code: "\"   let url=baseUrl+'power/'+JSON.stringify(event.id)+\\\"/\\\"+JSON.stringify(event.delta.apower)+\\\"/\\\"; Shelly.call(\\\"HTTP.GET\\\", {\\\"url\\\": url});\\n  }\\n }\\n}});\"\""],
     ]
+    sendScriptCmd("http://${ip}/rpc/Script.Stop", [id: 1]);
     sendScriptCmd("http://${ip}/rpc/Script.Delete", [id: 1]);
     sendScriptCmd("http://${ip}/rpc/Script.Create?", [:]);
     sendScriptCmd("http://${ip}/rpc/Script.PutCode",chunks[0]);
