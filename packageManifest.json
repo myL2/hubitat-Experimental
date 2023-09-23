@@ -9,91 +9,104 @@
       "name": "Shelly PLUS 2/2.5 as Roller Shutter",
       "namespace": "myL2",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Shelly/myL2_Shelly_PLUS_2_as_Roller_Shutter.groovy",
-      "required": false
+      "required": false,
+      "version": "1.0"
     },
     {
       "id": "42640f1d-f9a1-4db7-9c76-fba5bca860ef",
       "name": "Shelly Plus 2nd Gen",
       "namespace": "myL2",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Shelly/myL2_Shelly_Plus_2nd_Gen.groovy",
-      "required": false
+      "required": false,
+      "version": "1.0"
     },
     {
       "id": "2fa81345-ed22-46db-a219-979a6935f795",
       "name": "Shelly Plus 2nd Gen Child",
       "namespace": "myL2",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Shelly/myL2_Shelly_Plus_2nd_Gen_Child.groovy",
-      "required": false
+      "required": false,
+      "version": "1.0"
     },
     {
       "id": "96a26724-8762-4115-9604-9f2c39683bd6",
       "name": "Zigbee - Aqara Water Leak Sensor",
       "namespace": "oh-lalabs.com",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Xiaomi/zigbee-aqara-water-leak-sensor-expanded.groovy",
-      "required": false
+      "required": false,
+      "version": "1.0"
     },
     {
       "id": "69756074-c8b1-4fe0-b29f-1f104b19e291",
       "name": "Zigbee - Xiaomi/Aqara Motion Sensor",
       "namespace": "oh-lalabs.com",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Xiaomi/zigbee-xiaomi-aqara-motion-sensor-expanded.groovy",
-      "required": false
+      "required": false,
+      "version": "1.0"
     },
     {
       "id": "4bd1ddc8-d7f1-45e4-8c78-e22d5e44dc8e",
       "name": "Zigbee - Xiaomi/Aqara Temperature & Humidity Sensor",
       "namespace": "oh-lalabs.com",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Xiaomi/zigbee-xiaomi-aqara-temperature-humidity-expanded.groovy",
-      "required": false
+      "required": false,
+      "version": "1.0"
     },
     {
       "id": "8b3cf382-8df7-4d70-b3b3-97424334cb1a",
       "name": "Zigbee - Xiaomi/Aqara/Opple Button/Switch/Remote",
       "namespace": "oh-lalabs.com",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Xiaomi/zigbee-xiaomi-aqara-opple-button-switch-remote-expanded.groovy",
-      "required": false
+      "required": false,
+      "version": "1.0"
     },
     {
       "id": "96019d7e-00ca-4e92-858b-4cb3be3ff751",
       "name": "Zigbee - Xiaomi Mijia Smart Light Sensor (Zigbee 3.0)",
       "namespace": "oh-lalabs.com",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Xiaomi/zigbee-xiaomi-mijia-smart-light-sensor-expanded.groovy",
-      "required": false
+      "required": false,
+      "version": "1.0"
     },
     {
       "id": "a565b028-7692-4999-8151-248ed8cd4b5a",
       "name": "Smartly Inject",
       "namespace": "oh-lalabs.com",
       "location": "https://raw.githubusercontent.com/markus-li/Hubitat/release/drivers/expanded/smartly-inject-expanded.groovy",
-      "required": false
+      "required": false,
+      "version": "1.0"
     },
     {
       "id": "b8b5a5d7-cfa5-40af-9198-95ce6dff2d31",
       "name": "Zemismart ZigBee Wall Switch Multi-Gang",
       "namespace": "muxa",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/SmartWise/zemismart-zigbee-multigang-switch.groovy",
-      "required": false
+      "required": false,
+      "version": "1.0"
     },
     {
       "id": "88a58f33-d5e3-49be-b862-421f78d61f8a",
       "name": "Notification Proxy Device",
       "namespace": "RMoRobert",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/NotificationProxy.groovy",
-      "required": false
+      "required": false,
+      "version": "1.0"
     },
     {
       "id": "4e55fb6a-8c8c-4f8c-9d4d-885abad05dba",
       "name": "Tuya Zigbee Smoke Detector",
       "namespace": "kkossev",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/SmartWise/Tuya_Zigbee_Smoke_Detector.groovy",
-      "required": false
+      "required": false,
+      "version": "1.0"
     },
     {
       "id": "f912d0d6-d9ba-428a-8b29-41fd02763389",
       "name": "Zigbee - Xiaomi/Aqara Contact Sensor",
       "namespace": "oh-lalabs.com",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Xiaomi/zigbee-xiaomi-aqara-contact-sensor-expanded.groovy",
-      "required": false
+      "required": false,
+      "version": "1.0"
     }
   ],
   "apps": [
@@ -104,7 +117,8 @@
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Shelly/myL2_Shelly_Plus_2nd_Gen_Quick_Setup.groovy",
       "required": false,
       "oauth": false,
-      "primary": false
+      "primary": false,
+      "version": "1.0"
     },
     {
       "id": "d8b02937-4808-4f4c-add7-c4242f2cd96e",
@@ -113,7 +127,8 @@
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Shelly/myL2_Shelly_Plus_2nd_Gen_WiFi_Config.groovy",
       "required": false,
       "oauth": false,
-      "primary": false
+      "primary": false,
+      "version": "1.0"
     },
     {
       "id": "3ffd6585-3271-4a4b-8d50-226645569b13",
@@ -122,7 +137,8 @@
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/NotificationProxyApp.groovy",
       "required": false,
       "oauth": false,
-      "primary": false
+      "primary": false,
+      "version": "1.0"
     },
     {
       "id": "1e414e00-1e9f-462e-b0e9-ed0f04d85b48",
@@ -131,7 +147,8 @@
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/myL2_Edge_Mirror.groovy",
       "required": false,
       "oauth": false,
-      "primary": false
+      "primary": false,
+      "version": "1.0"
     },
     {
       "id": "8e54f13b-75f9-4ccd-9cd8-5ba288174aac",
@@ -140,24 +157,28 @@
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/myL2_Edge_Mirror_Child.groovy",
       "required": false,
       "oauth": false,
-      "primary": false
+      "primary": false,
+      "version": "1.0"
     }
   ],
   "files": [
     {
       "id": "c63c1bf4-385c-4461-aa6e-0adcf720027d",
       "name": "smartly.js",
-      "location": "https://raw.githubusercontent.com/markus-li/Hubitat/release/assets/smartly.js"
+      "location": "https://raw.githubusercontent.com/markus-li/Hubitat/release/assets/smartly.js",
+      "version": "1.0"
     },
     {
       "id": "87c57b76-d03e-4a42-b0f4-9444458dac6a",
       "name": "smartly-injected.min.css",
-      "location": "https://raw.githubusercontent.com/markus-li/Hubitat/release/assets/smartly-injected.min.css"
+      "location": "https://raw.githubusercontent.com/markus-li/Hubitat/release/assets/smartly-injected.min.css",
+      "version": "1.0"
     },
     {
       "id": "f35d492e-57cb-4c24-b770-eeea2cca92c5",
       "name": "usermode.json",
-      "location": "https://raw.githubusercontent.com/markus-li/Hubitat/release/assets/usermode.json"
+      "location": "https://raw.githubusercontent.com/markus-li/Hubitat/release/assets/usermode.json",
+      "version": "1.0"
     }
   ]
 }
