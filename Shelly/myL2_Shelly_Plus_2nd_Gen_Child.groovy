@@ -54,6 +54,7 @@ metadata {
     preferences {
         input("ip", "string", title:"IP", description:"Shelly IP Address", defaultValue:"" , required: true)
         input("channel", "number", title:"Channel", description:"Child device Channel" , required: true)
+        input("prefix", "string", title:"API RPC Prefix", description:" (switch, pm1, etc)", defaultValue:"switch" , required: true)
         input name: "username", type: "text", title: "Username:", description: "(blank if none)", required: false
         input name: "password", type: "password", title: "Password:", description: "(blank if none)", required: false
         input name: "debugOutput", type: "bool", title: "Enable debug logging?", defaultValue: false
@@ -82,8 +83,8 @@ def updated() {
 
 def refresh(){
     //log.info "Shelly Refresh called"
-    def params = [uri: "http://${username}:${password}@${ip}/rpc/Switch.GetStatus?id=${channel}"]
-
+    def params = [uri: "http://${username}:${password}@${ip}/rpc/${prefix}.GetStatus?id=${channel}"]
+    //log.info params
     try {
         httpGet(params) {
             resp -> resp.headers.each {    }
@@ -91,12 +92,12 @@ def refresh(){
             if(obs.voltage != null){
                 sendEvent(name: "voltage", value: obs.voltage)
             }
-
+            try{
             if (obs.temperature.tC != null){
                 if (state.temp_scale == "C") sendEvent(name: "temperature", value: obs.temperature.tC)
                 if (state.temp_scale == "F") sendEvent(name: "temperature", value: obs.temperature.tF)
             }
-
+            }catch(e){}
             ison = obs.output
             if (ison == true) {
                 sendEvent(name: "switch", value: "on")
