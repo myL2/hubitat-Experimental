@@ -123,22 +123,40 @@
       "required": false,
       "oauth": false,
       "primary": false
+    },
+    {
+      "id": "1e414e00-1e9f-462e-b0e9-ed0f04d85b48",
+      "name": "Edge Mirror",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/myL2_Edge_Mirror.groovy",
+      "required": false,
+      "oauth": false,
+      "primary": false
+    },
+    {
+      "id": "8e54f13b-75f9-4ccd-9cd8-5ba288174aac",
+      "name": "Edge Mirror Child",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/myL2_Edge_Mirror_Child.groovy",
+      "required": false,
+      "oauth": false,
+      "primary": false
     }
   ],
   "files": [
     {
       "id": "c63c1bf4-385c-4461-aa6e-0adcf720027d",
-      "name": null,
+      "name": "smartly.js",
       "location": "https://raw.githubusercontent.com/markus-li/Hubitat/release/assets/smartly.js"
     },
     {
       "id": "87c57b76-d03e-4a42-b0f4-9444458dac6a",
-      "name": null,
+      "name": "smartly-injected.min.css",
       "location": "https://raw.githubusercontent.com/markus-li/Hubitat/release/assets/smartly-injected.min.css"
     },
     {
       "id": "f35d492e-57cb-4c24-b770-eeea2cca92c5",
-      "name": null,
+      "name": "usermode.json",
       "location": "https://raw.githubusercontent.com/markus-li/Hubitat/release/assets/usermode.json"
     }
   ]
