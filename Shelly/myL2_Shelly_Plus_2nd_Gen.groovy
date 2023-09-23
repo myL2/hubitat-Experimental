@@ -81,6 +81,7 @@ metadata {
         input name: "username", type: "text", title: "Username:", description: "(blank if none)", required: false
         input name: "password", type: "password", title: "Password:", description: "(blank if none)", required: false
         input("channels", "number", title:"Number of channels", description:"1,2,3,4", defaultValue:"0" , required: true)
+        input("prefix", "string", title:"API RPC Prefix", description:" (switch, pm1, etc)", defaultValue:"switch" , required: true)
         input("refresh_Rate", "enum", title: "Device Refresh Rate", description:"<font color=red>!!WARNING!!</font><br>DO NOT USE if you have over 50 Shelly devices.", options: refreshRate, defaultValue: "30 min")
 
         input name: "debugOutput", type: "bool", title: "Enable debug logging?", defaultValue: false
@@ -212,38 +213,50 @@ def parse(values){
 }
 
 def disableApAndBt(){
-    sendScriptCmd("http://${ip}/rpc/WiFi.SetConfig", [config: "{ap:{enable:false}}"]);
-    sendScriptCmd("http://${ip}/rpc/BLE.SetConfig", [config: "{enable:false}"]);
+    def accO=URLEncoder.encode("{", "UTF-8");
+    def accC=URLEncoder.encode("}", "UTF-8");
+    def quot=URLEncoder.encode("\"", "UTF-8");
+    sendScriptCmd("http://${ip}/rpc/WiFi.SetConfig?config=${accO}ap:${accO}enable:false${accC}${accC}");
+    sendScriptCmd("http://${ip}/rpc/BLE.SetConfig?config=${accO}${quot}enable${quot}:false${accC}");
 }
 
 def uploadScripts(){
+    def accO=URLEncoder.encode("{", "UTF-8");
+    def accC=URLEncoder.encode("}", "UTF-8");
+    def quot=URLEncoder.encode("\"", "UTF-8");
+    def gt=URLEncoder.encode(">", "UTF-8");
+    def or=URLEncoder.encode("|", "UTF-8");
     def chunks=[
-        [id: 1, append: true, code: "\"let minThreshold=10;\\nlet lastPower=0;\\nlet baseUrl='http://${location.hub.localIP}:39501/';\\nShelly.addStatusHandler(function(event) {\\nif (event.name===\\\"switch\\\"){\\n \""],
-        [id: 1, append: true, code: "\"if(typeof(event.delta.output)!==\\\"undefined\\\"){\\n  let url=baseUrl+'switch/'+JSON.stringify(event.id)+'/'+\""],
-        [id: 1, append: true, code: "\"(event.delta.output?\\\"on\\\":\\\"off\\\")+\\\"/\\\"; Shelly.call(\\\"HTTP.GET\\\", {\\\"url\\\": url});\\n }\\n\""],
-        [id: 1, append: true, code: "\" if (typeof event.delta.apower!==\\\"undefined\\\"){\\n  if (Math.abs(event.delta.apower-lastPower)>minThreshold){\\n   lastPower=event.delta.apower;\\n\""],
-        [id: 1, append: true, code: "\"   let url=baseUrl+'power/'+JSON.stringify(event.id)+\\\"/\\\"+JSON.stringify(event.delta.apower)+\\\"/\\\"; Shelly.call(\\\"HTTP.GET\\\", {\\\"url\\\": url});\\n  }\\n }\\n}});\"\""],
+        [id: 1, append: false, code: "let minThreshold=10; let lastPower=0; let baseUrl='http://${location.hub.localIP}:39501/';"],
+        [id: 1, append: true, code: "Shelly.addStatusHandler(function(event)${accO}"],
+        [id: 1, append: true, code: "if(event.name===${quot}switch${quot}${or}${or}event.name===${quot}pm1${quot})${accO}"],
+        [id: 1, append: true, code: "if(typeof(event.delta.output)!==${quot}undefined${quot})${accO}let url=baseUrl+'switch/'+JSON.stringify(event.id)+'/'+(event.delta.output?${quot}on${quot}:${quot}off${quot})+${quot}/${quot};Shelly.call(${quot}HTTP.GET${quot},${accO}${quot}url${quot}:url${accC});${accC}"],
+        [id: 1, append: true, code: "if(typeof event.delta.apower!==${quot}undefined${quot})${accO}if(Math.abs(event.delta.apower-lastPower)${gt}minThreshold)${accO}"],
+        [id: 1, append: true, code: "lastPower=event.delta.apower;"],
+        [id: 1, append: true, code: "let url=baseUrl+'power/'+JSON.stringify(event.id)+${quot}/${quot}+JSON.stringify(event.delta.apower)+${quot}/${quot};Shelly.call(${quot}HTTP.GET${quot},${accO}${quot}url${quot}:url${accC});${accC}${accC}${accC}${accC});"],
     ]
-    sendScriptCmd("http://${ip}/rpc/Script.Stop", [id: 1]);
-    sendScriptCmd("http://${ip}/rpc/Script.Delete", [id: 1]);
-    sendScriptCmd("http://${ip}/rpc/Script.Create?", [:]);
-    sendScriptCmd("http://${ip}/rpc/Script.PutCode",chunks[0]);
-    sendScriptCmd("http://${ip}/rpc/Script.PutCode",chunks[1]);
-    sendScriptCmd("http://${ip}/rpc/Script.PutCode",chunks[2]);
-    sendScriptCmd("http://${ip}/rpc/Script.PutCode",chunks[3]);
-    sendScriptCmd("http://${ip}/rpc/Script.PutCode",chunks[4]);
-    sendScriptCmd("http://${ip}/rpc/Script.SetConfig",[id: 1, config: "{enable:true, name:\"Hubitat\"}"]);
-    sendScriptCmd("http://${ip}/rpc/Script.Start", [id: 1]);
+    sendScriptCmd("http://${ip}/rpc/Script.Stop?id=1");
+    sendScriptCmd("http://${ip}/rpc/Script.Delete?id=1");
+    sendScriptCmd("http://${ip}/rpc/Script.Create?id=1");
+    sendScriptCmd("http://${ip}/rpc/Script.PutCode?id=1&append=false&code=${URLEncoder.encode(chunks[0].code.replace(" ","%20"), "UTF-8")}");
+    sendScriptCmd("http://${ip}/rpc/Script.PutCode?id=1&append=false&code=${chunks[0].code.replace(" ","%20")}");
+    sendScriptCmd("http://${ip}/rpc/Script.PutCode?id=1&append=true&code=${chunks[1].code.replace(" ","%20")}");
+    sendScriptCmd("http://${ip}/rpc/Script.PutCode?id=1&append=true&code=${chunks[2].code.replace(" ","%20")}");
+    sendScriptCmd("http://${ip}/rpc/Script.PutCode?id=1&append=true&code=${chunks[3].code.replace(" ","%20")}");
+    sendScriptCmd("http://${ip}/rpc/Script.PutCode?id=1&append=true&code=${chunks[4].code.replace(" ","%20")}");
+    sendScriptCmd("http://${ip}/rpc/Script.PutCode?id=1&append=true&code=${chunks[5].code.replace(" ","%20")}");
+    sendScriptCmd("http://${ip}/rpc/Script.PutCode?id=1&append=true&code=${chunks[6].code.replace(" ","%20")}");
+    sendScriptCmd("http://${ip}/rpc/Script.SetConfig?id=1&config=${accO}${quot}enable${quot}:true,${quot}name${quot}:${quot}Hubitat${quot}${accC}");
+    sendScriptCmd("http://${ip}/rpc/Script.Start?id=1");
     log.debug "Script upload finished"
 }
 
-def sendScriptCmd(uri, args){
+def sendScriptCmd(uri){
     def params = [
         uri: uri,
-        requestContentType: 'text/html',
-        query: args
     ]
     //log.info params
+    
     try{
         httpGet(params) {
             resp -> resp.headers.each {
@@ -251,8 +264,8 @@ def sendScriptCmd(uri, args){
             }
         }
     }catch (e){
-        logDebug "Err: " + e.message
-        logDebug "Err response: " + e.response.getData()
+        log.info "Err: " + e.message
+        log.info "Err response: " + e.response.getData()
     }
 }
 
@@ -374,6 +387,7 @@ def getGetConfig(){
 
 }
 
+/*
 def CheckForUpdate() {
     if (txtEnable) log.info "Check Device FW"
     def params = [uri: "http://${username}:${password}@${ip}/rpc/Shelly.CheckForUpdate"]
@@ -401,6 +415,7 @@ def CheckForUpdate() {
         log.error "something went wrong: $e"
     }
 }
+*/
 
 
 def ping() {
@@ -455,7 +470,7 @@ def poll() {
     getWiFi()
     getDeviceInfo()
     getGetConfig()
-    CheckForUpdate()
+    //CheckForUpdate()
 }
 
 def RebootDevice() {
@@ -477,6 +492,7 @@ def RebootDevice() {
 def UpdateDeviceFW() {
     if (txtEnable) log.info "Updating Device FW"
     def params = [uri: "http://${username}:${password}@${ip}/rpc/Shelly.Update?stage=stable"]
+    log.info params
     try {
         httpGet(params) {
             resp -> resp.headers.each {
