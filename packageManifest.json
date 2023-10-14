@@ -29,6 +29,14 @@
       "version": "1.0"
     },
     {
+      "id": "f912d0d6-d9ba-428a-8b29-41fd02763389",
+      "name": "Zigbee - Xiaomi/Aqara Contact Sensor",
+      "namespace": "oh-lalabs.com",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Xiaomi/zigbee-xiaomi-aqara-contact-sensor-expanded.groovy",
+      "required": false,
+      "version": "1.0.1"
+    },
+    {
       "id": "96a26724-8762-4115-9604-9f2c39683bd6",
       "name": "Zigbee - Aqara Water Leak Sensor",
       "namespace": "oh-lalabs.com",
@@ -54,7 +62,7 @@
     },
     {
       "id": "8b3cf382-8df7-4d70-b3b3-97424334cb1a",
-      "name": "Zigbee - Xiaomi/Aqara/Opple Button/Switch/Remote",
+      "name": "Zigbee - Xiaomi/Aqara Button",
       "namespace": "oh-lalabs.com",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Xiaomi/zigbee-xiaomi-aqara-opple-button-switch-remote-expanded.groovy",
       "required": false,
@@ -62,7 +70,7 @@
     },
     {
       "id": "96019d7e-00ca-4e92-858b-4cb3be3ff751",
-      "name": "Zigbee - Xiaomi Mijia Smart Light Sensor (Zigbee 3.0)",
+      "name": "Zigbee - Xiaomi Mijia Light Sensor",
       "namespace": "oh-lalabs.com",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Xiaomi/zigbee-xiaomi-mijia-smart-light-sensor-expanded.groovy",
       "required": false,
@@ -89,14 +97,6 @@
       "name": "Tuya Zigbee Smoke Detector",
       "namespace": "kkossev",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/SmartWise/Tuya_Zigbee_Smoke_Detector.groovy",
-      "required": false,
-      "version": "1.0"
-    },
-    {
-      "id": "f912d0d6-d9ba-428a-8b29-41fd02763389",
-      "name": "Zigbee - Xiaomi/Aqara Contact Sensor",
-      "namespace": "oh-lalabs.com",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Xiaomi/zigbee-xiaomi-aqara-contact-sensor-expanded.groovy",
       "required": false,
       "version": "1.0"
     }
@@ -152,6 +152,5 @@
       "primary": false,
       "version": "1.0"
     }
-  ],
-  "files": []
+  ]
 }
