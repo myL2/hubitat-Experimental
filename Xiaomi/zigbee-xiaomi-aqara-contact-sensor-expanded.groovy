@@ -135,7 +135,7 @@ ArrayList<String> refresh() {
     ])
 
     if(model == "lumi.magnet.agl02") {
-        logging("T1 Sensor Init", 100)
+        logging("T1 Sensor Init", 5)
         bindAndRetrieveT1SensorData()
     }
 
@@ -245,13 +245,13 @@ ArrayList<String> parse(String description) {
     }
     logging("msgMap: ${msgMap}", 1)
     // END:  getGenericZigbeeParseHeader(loglevel=1)
-    logging("msgMap: ${msgMap}", 100)
+    logging("msgMap: ${msgMap}", 5)
 
     switch(msgMap["cluster"] + '_' + msgMap["attrId"]) {
         case "0000_FF01":
         case "0000_FF02":
             if(msgMap["encoding"] == "4C") {
-                logging("KNOWN event (Xiaomi/Aqara specific data structure with battery data - 4C - hourly checkin) - description:${description} | parseMap:${msgMap}", 100)
+                logging("KNOWN event (Xiaomi/Aqara specific data structure with battery data - 4C - hourly checkin) - description:${description} | parseMap:${msgMap}", 5)
 
                 parseAndSendBatteryStatus(msgMap['value'][1] / 1000.0)
                 sendOpenCloseEvent(msgMap['value'][0], sendAsStateChange=false, sendDatetimeEvent=false)
@@ -302,7 +302,7 @@ ArrayList<String> parse(String description) {
                 msgMap["additionalAttrs"][0]["encoding"] = "42"
                 msgMap["additionalAttrs"][0]["value"] = parseXiaomiStruct(msgMap["additionalAttrs"][0]["value"], isFCC0=msgMap["additionalAttrs"][0]["attrId"]=="FCC0")
             }
-            logging("Reset button pressed/message requested by hourly checkin - description:${description} | parseMap:${msgMap}", 100)
+            logging("Reset button pressed/message requested by hourly checkin - description:${description} | parseMap:${msgMap}", 5)
             
             if(msgMap.containsKey("additionalAttrs") && msgMap["additionalAttrs"][0]["encoding"] == "42") {
                 Map value = msgMap["additionalAttrs"][0]["value"]
@@ -326,13 +326,13 @@ ArrayList<String> parse(String description) {
         default:
             switch(msgMap["clusterId"]) {
                 case "0006":
-                    logging("0006 CLUSTER EVENT - description:${description} | parseMap:${msgMap}", 100)
+                    logging("0006 CLUSTER EVENT - description:${description} | parseMap:${msgMap}", 5)
                     sendZigbeeCommands(zigbee.readAttribute(CLUSTER_BASIC, 0x0005))
                     break
                 case "0013":
-                    logging("MULTISTATE CLUSTER EVENT - description:${description} | parseMap:${msgMap}", 100)
+                    logging("MULTISTATE CLUSTER EVENT - description:${description} | parseMap:${msgMap}", 5)
                     if(getDeviceDataByName('model') == "lumi.magnet.agl02") {
-                        logging("T1 Motion Sensor Init", 100)
+                        logging("T1 Motion Sensor Init", 5)
                         bindAndRetrieveT1SensorData()
                     }
 
@@ -353,7 +353,7 @@ ArrayList<String> parse(String description) {
 
     if(hasCorrectCheckinEvents(maximumMinutesBetweenEvents=90) == false) {
         List<String> restoreCmd = zigbeeReadAttribute(CLUSTER_BASIC, 0x0004, [:], delay=71)
-        logging("Restoring bind settings", 100)
+        logging("Restoring bind settings", 5)
         restoreCmd += ["zdo bind ${device.deviceNetworkId} 0x01 0x01 0x0006 {${device.zigbeeId}} {}", "delay 72",]
         restoreCmd += ["zdo bind ${device.deviceNetworkId} 0x01 0x01 0x0000 {${device.zigbeeId}} {}", "delay 73",]
         sendZigbeeCommands(restoreCmd)
@@ -393,7 +393,7 @@ private String getDriverVersion() {
     comment = "Works with models MCCGQ01LM & MCCGQ11LM."
     if(comment != "") state.comment = comment
     String version = "v1.0.1.1123"
-    logging("getDriverVersion() = ${version}", 100)
+    logging("getDriverVersion() = ${version}", 5)
     sendEvent(name: "driver", value: version)
     updateDataValue('driver', version)
     return version
@@ -894,7 +894,7 @@ ArrayList<String> zigbeeReadAttributeList(Integer cluster, List<Integer> attribu
     }
     List<String> attributeIdsString = []
     attributeIds.each { attributeIdsString.add(integerToHexString(it, 2, reverse=true)) }
-    logging("attributeIds=$attributeIds, attributeIdsString=$attributeIdsString", 100)
+    logging("attributeIds=$attributeIds, attributeIdsString=$attributeIdsString", 5)
     String rattrArgs = "0x${device.deviceNetworkId} 1 0x01 0x${integerToHexString(cluster, 2)} " + 
                        "{000000${attributeIdsString.join()}}"
     ArrayList<String> cmd = ["he raw $rattrArgs", "delay $delay"]
@@ -1054,12 +1054,12 @@ void checkEventInterval(boolean displayWarnings=true) {
 void startCheckEventInterval() {
     logging("startCheckEventInterval()", 1)
     if(recoveryMode != "Disabled") {
-        logging("Recovery feature ENABLED", 100)
+        logging("Recovery feature ENABLED", 5)
         Random rnd = new Random()
         schedule("${rnd.nextInt(59)} ${rnd.nextInt(59)}/59 * * * ? *", 'checkEventInterval')
         checkEventInterval(displayWarnings=true)
     } else {
-        logging("Recovery feature DISABLED", 100)
+        logging("Recovery feature DISABLED", 5)
         unschedule('checkEventInterval')
         unschedule('recoveryEvent')
         unschedule('reconnectEvent')
@@ -1805,7 +1805,7 @@ String getChildDeviceComboId(Integer button) {
 boolean buttonDown(Integer button, boolean useEvent=false) {
     boolean active = false
     if(useEvent == true) {
-        logging("buttonDown(button=$button)", 100)
+        logging("buttonDown(button=$button)", 5)
         Map childDeviceConfig = getChildDeviceConfig()
         if(childDeviceConfig[button]['switchMomentary'] == true) {
             setMomentarySwitch(buildChildDeviceId("$button"))
@@ -1835,13 +1835,13 @@ void updateBatteryDemo(Long step) {
   bat = bat.setScale(0, BigDecimal.ROUND_HALF_UP)
   bat = bat > 100 ? 100 : bat
   
-  logging("Battery DEMO event: $bat%", 100)
+  logging("Battery DEMO event: $bat%", 5)
   sendEvent(name:"battery", value: bat, unit: "%", isStateChange: true, descriptionText: "DEMO")
 
 }
 
 boolean buttonPushed(Integer button, boolean momentaryRelease=false) {
-    logging("buttonPushed(button=$button)", 100)
+    logging("buttonPushed(button=$button)", 5)
     boolean active = false
     Map childDeviceConfig = getChildDeviceConfig()
     if(childDeviceConfig[button]['switch'] == true) {
@@ -1877,7 +1877,7 @@ boolean buttonPushed(Integer button, boolean momentaryRelease=false) {
 }
 
 boolean buttonHeld(Integer button) {
-    logging("buttonHeld(button=$button)", 100)
+    logging("buttonHeld(button=$button)", 5)
     boolean active = false
     Map childDeviceConfig = getChildDeviceConfig()
     if(childDeviceConfig[button]['switch'] == true) {
@@ -1894,7 +1894,7 @@ boolean buttonHeld(Integer button) {
 }
 
 boolean buttonDoubleTapped(Integer button) {
-    logging("buttonDoubleTapped(button=$button)", 100)
+    logging("buttonDoubleTapped(button=$button)", 5)
     boolean active = false
     Map childDeviceConfig = getChildDeviceConfig()
     if(childDeviceConfig[button]['switch'] == true) {
@@ -2083,7 +2083,7 @@ void mirrorContactToSwitch(boolean openClose, Integer button) {
 
 void sendOpenCloseEvent(boolean openClose, sendAsStateChange=true, sendDatetimeEvent=false) {
     if(invertContact == null) invertContact = false
-    logging("sendOpenCloseEvent(openClose=$openClose) invertContact=$invertContact", 100)
+    logging("sendOpenCloseEvent(openClose=$openClose) invertContact=$invertContact", 5)
     if(openClose == invertContact) {
         sendEvent(name:"contact", value: "closed", isStateChange: false, descriptionText: "Contact was Closed")
         if(useAsButton(1) == true && buttonDown(1, useEvent=true) == true) {
@@ -2106,7 +2106,7 @@ void sendOpenCloseEvent(boolean openClose, sendAsStateChange=true, sendDatetimeE
             if(lastHold == 0) millisHeld = 0
             logging("millisHeld = $millisHeld, millisForHold = $millisForHoldLong", 1)
             if(millisHeld > millisForHoldLong) {
-                logging("Button 1 was held", 100)
+                logging("Button 1 was held", 5)
                 buttonHeld(1)
             }
         } else if(useAsMirrorSwitch(1) == true) {
