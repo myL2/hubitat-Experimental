@@ -99,6 +99,13 @@
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/SmartWise/Tuya_Zigbee_Smoke_Detector.groovy",
       "required": false,
       "version": "1.0"
+    },
+    {
+      "id": "401e9904-3f9c-4384-9633-db49883865af",
+      "name": "IMOU Single Button",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/IMOU/IMOU%20Single%20Button%20ZE1.groovy",
+      "required": false
     }
   ],
   "apps": [
