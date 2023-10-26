@@ -27,6 +27,7 @@ void updated() {
 
 def configure(){
     sendEvent(name:"pushed", value: 0, isStateChange: true)
+    sendEvent(name:"numberOfButtons", value: 1, isStateChange: false)
 }
 
 ArrayList<String> parse(String description) {
