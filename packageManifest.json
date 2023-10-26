@@ -105,7 +105,8 @@
       "name": "IMOU Single Button",
       "namespace": "myL2",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/IMOU/IMOU%20Single%20Button%20ZE1.groovy",
-      "required": false
+      "required": false,
+      "version": "1.1"
     }
   ],
   "apps": [
