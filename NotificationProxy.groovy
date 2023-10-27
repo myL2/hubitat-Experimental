@@ -80,5 +80,5 @@ void departed() {
 }
 
 def logDebug(str) {
-   if (settings.debugMode != false) log.debug(str)
+   if (debugMode != false) log.debug(str)
 }
