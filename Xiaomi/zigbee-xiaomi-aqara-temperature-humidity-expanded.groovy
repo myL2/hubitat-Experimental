@@ -244,7 +244,7 @@ ArrayList<String> parse(String description) {
     }
     //logging("msgMap: ${msgMap}", 0)
     // END:  getGenericZigbeeParseHeader(loglevel=0)
-    logging("msgMap: ${msgMap}", 100)
+    //logging("msgMap: ${msgMap}", 100)
 
     switch(msgMap["cluster"] + '_' + msgMap["attrId"]) {
         case "0000_0005":
