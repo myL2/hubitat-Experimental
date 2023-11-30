@@ -171,9 +171,8 @@ metadata {
         attribute "lastCheckin", "string"
     }
     preferences {
-        input(name: "logEnable", type: "bool", title: "Enable debug logging", defaultValue: true)
+        input(name: "logEnable", type: "bool", title: "Enable debug logging", defaultValue: false)
         input(name: "txtEnable", type: "bool", title: "Enable description text logging", defaultValue: true)
-        input(title: "IMPORTANT", description: "<b>In order to operate normally, please pair the device to HE after changing to this driver!</b>", type: "paragraph", element: "paragraph")
     }
 }
 
