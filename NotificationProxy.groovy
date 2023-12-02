@@ -39,6 +39,7 @@ metadata {
       capability "PresenceSensor"
       command "arrived"
       command "departed"
+      attribute "deviceNotification", "string"
    }
 	
    preferences() {
