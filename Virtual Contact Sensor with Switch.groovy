@@ -2,6 +2,7 @@
  * Virtual Contact Sensor with Switch
  *
  * Created by Stephan Hackett
+ * Modified by SebyM (added Turn Off After)
  * 
  */
 
@@ -16,6 +17,7 @@ metadata {
     }
 	preferences {
         input name: "reversed", type: "bool", title: "Reverse Action"
+        input name: "turnOffAfter", type: "number", title:"Turn Off After", description:"0: disabled; valid: 0-15", defaultValue:"0", range: "0..15"
 	}
 }
 
@@ -24,6 +26,7 @@ def open(){
 	if(reversed) switchVal = "off"
 	else switchVal = "on"
 	sendEvent(name: "switch", value: switchVal)
+    if (turnOffAfter>0) runIn(turnOffAfter, off)
 }
 
 def close(){
@@ -38,6 +41,7 @@ def on(){
 	if(reversed==true) contactVal = "closed"
 	else contactVal = "open"
 	sendEvent(name: "contact", value: contactVal)
+    if (turnOffAfter>0) runIn(turnOffAfter, off)
 }
 
 def off(){
@@ -58,5 +62,4 @@ def updated(){
 def initialize(){
 	sendEvent(name: "switch", value: "off")
 	sendEvent(name: "contact", value: "closed")
-	
 }
