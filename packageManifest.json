@@ -113,7 +113,8 @@
       "name": "Virtual Contact Sensor with Switch",
       "namespace": "stephack",
       "location": "https://raw.githubusercontent.com/stephack/Hubitat/master/drivers/Virtual%20Contact%20Sensor%20with%20Switch.groovy",
-      "required": false
+      "required": false,
+      "version": "1.0"
     }
   ],
   "apps": [
