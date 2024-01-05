@@ -107,6 +107,13 @@
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/IMOU/IMOU%20Single%20Button%20ZE1.groovy",
       "required": false,
       "version": "1.1"
+    },
+    {
+      "id": "b293ca0a-6fee-4ebe-abe2-69f6254ceb02",
+      "name": "Virtual Contact Sensor with Switch",
+      "namespace": "stephack",
+      "location": "https://raw.githubusercontent.com/stephack/Hubitat/master/drivers/Virtual%20Contact%20Sensor%20with%20Switch.groovy",
+      "required": false
     }
   ],
   "apps": [
