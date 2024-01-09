@@ -61,6 +61,7 @@ void updated() {
 void initialize() {
    log.debug "initialize()"	
    subscribe(proxyDevice, "deviceNotification", notificationHandler)
+   app.updateLabel("Notification Proxy: ${proxyDevice}")
 }
 
 void notificationHandler(evt) {
