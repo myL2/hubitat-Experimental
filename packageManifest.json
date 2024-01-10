@@ -180,19 +180,19 @@
   "files": [
     {
       "id": "4e1ace6d-e853-4fd8-a6b9-bc83d0047875",
-      "name": smartly.js,
+      "name": "smartly.js",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/smartly/smartly.js",
       "version": "1.1"
     },
     {
       "id": "1947a0ac-6136-4390-82ae-ef77993ff03c",
-      "name": usermode.json,
+      "name": "usermode.json",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/smartly/usermode.json",
       "version": "1.1"
     },
     {
       "id": "7430bc2a-45d0-4b93-8fe0-1ee79464dbcd",
-      "name": smartly-injected.min.css,
+      "name": "smartly-injected.min.css",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/smartly/smartly-injected.min.css",
       "version": "1.1"
     }
