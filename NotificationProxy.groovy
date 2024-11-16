@@ -63,7 +63,8 @@ void initialize() {
 
 void deviceNotification(text) {
    logDebug("Received notification, creating event. Text: ${text}")
-   sendEvent(name: "deviceNotification", value: text, isStateChange: true)
+   def LastRefresh = new Date().format("dd.MM HH:mm", location.timeZone)
+   sendEvent(name: "deviceNotification", value: "${LastRefresh}@${location.name}: ${text}", isStateChange: true)
 }
 
 // Custom command for manipulating presence. Can remove/comment out if not wanted
