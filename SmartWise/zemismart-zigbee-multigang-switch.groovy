@@ -1,63 +1,32 @@
 /**
- *  Zemismart ZigBee Wall Switch Multi-Gang - Device Driver for Hubitat Elevation hub
- *
- *  https://community.hubitat.com/t/zemismart-zigbee-1-2-3-4-gang-light-switches/21124/36?u=kkossev
- *
- *  Based on Muxa's driver Version 0.2.0 (last updated Feb 5, 2020)
- *
- *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
- *  in compliance with the License. You may obtain a copy of the License at:
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software distributed under the License is distributed
- *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
- *  for the specific language governing permissions and limitations under the License.
- *
- *  Ver. 0.0.1 2019-08-21 Muxa    - first version
- *  Ver. 0.1.0 2020-02-05 Muxa    - Driver name "Zemismart ZigBee Wall Switch Multi-Gang"
- *  Ver. 0.2.1 2022-02-26 kkossev - TuyaBlackMagic for TS0003 _TZ3000_vjhcenzo 
- *  Ver. 0.2.2 2022-02-27 kkossev - TS0004 4-button, logEnable, txtEnable, ping(), intercept cluster: E000 attrId: D001 and D002 exceptions;
- *  Ver. 0.2.3 2022-03-04 kkossev - powerOnState options
- *  Ver. 0.2.4 2022-04-16 kkossev - _TZ3000_w58g68s3 Yagusmart 3 gang zigbee switch fingerprint
- *  Ver. 0.2.5 2022-05-28 kkossev - _TYZB01_Lrjzz1UV Zemismart 3 gang zigbee switch fingerprint; added TS0011 TS0012 TS0013 models and fingerprints; more TS002, TS003, TS004 manufacturers
- *  Ver. 0.2.6 2022-06-03 kkossev - powerOnState and Debug logs improvements; importUrl; singleThreaded
- *  Ver. 0.2.7 2022-06-06 kkossev - command '0B' (command response) bug fix; added Tuya Zugbee mini switch TMZ02L (_TZ3000_txpirhfq); bug fix for TS0011 single-gang switches.
- *  Ver. 0.2.8 2022-07-13 kkossev - added _TZ3000_18ejxno0 and _TZ3000_qewo8dlz fingerprints; added TS0001 wall switches fingerprints; added TS011F 2-gang wall outlets; added switchType configuration
- *  Ver. 0.2.9 2022-09-29 kkossev - added _TZ3000_hhiodade (ZTS-EU_1gang); added TS0001 _TZ3000_oex7egmt; _TZ3000_b9vanmes; _TZ3000_zmy4lslw
- *  Ver. 0.2.10 2022-10-15 kkossev - _TZ3000_hhiodade fingerprint correction; added _TZ3000_ji4araar
- *  Ver. 0.2.11 2022-11-07 kkossev - added _TZ3000_tqlv4ug4
- *  Ver. 0.2.12 2022-11-11 kkossev - added _TZ3000_cfnprab5 (TS011F) Xenon 4-gang + 2 USB extension; _TYZB01_vkwryfdr (TS0115) UseeLink; _TZ3000_udtmrasg (TS0003)
- *  Ver. 0.2.13 2022-11-12 kkossev - tuyaBlackMagic() for Xenon similar to Tuya Metering Plug; _TZ3000_cfnprab5 fingerprint correction; added SiHAS and NodOn switches
- *  Ver. 0.2.14 2022-11-23 kkossev - added 'ledMOode' command; fingerprints critical bug fix.
- *  Ver. 0.2.15 2022-11-23 kkossev - added added _TZ3000_zmy1waw6
- *  Ver. 0.3.0  2023-01-07 kkossev - noBindingButPolling() for _TZ3000_fvh3pjaz _TZ3000_9hpxg80k _TZ3000_wyhuocal
- *  Ver. 0.3.1  2023-01-22 kkossev - restored TS0003 _TZ3000_vjhcenzo fingerprint; added _TZ3000_iwhuhzdo
- *  Ver. 0.4.0  2023-01-22 kkossev - parsing multiple attributes; 
- *  Ver. 0.4.1  2023-02-10 kkossev - IntelliJ lint; added _TZ3000_18ejxno0 third fingerprint; 
- *  Ver. 0.5.0  2023-03-13 kkossev - removed the Initialize capability and replaced it with a custom command
- *  Ver. 0.5.1  2023-04-15 kkossev - bugfix: initialize() was not called when a new device is paired; added _TZ3000_pfc7i3kt; added TS011F _TZ3000_18ejxno0 (2 gangs); _TZ3000_zmy1waw6 bug fix; added TS011F _TZ3000_yf8iuzil (2 gangs)
- *
  */
 
+import groovy.json.*
 import hubitat.device.HubAction
 import hubitat.device.Protocol
 import groovy.transform.Field
+import java.text.SimpleDateFormat
+import groovy.transform.CompileStatic
+import java.util.concurrent.ConcurrentHashMap
 
-def version() { "0.5.1" }
+def version() { "0.6.0" }
 
-def timeStamp() { "2023/04/15 9:16 AM" }
+def timeStamp() { "2024-11-29 22:01:00" }
+def SimpleDateFormat sdf() {new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")}
 
 @Field static final Boolean debug = false
+@Field static final Integer MAX_PING_MILISECONDS = 10000
+@Field static final Integer presenceCountTreshold = 3
+@Field static final Integer defaultPollingInterval = 3600
 
 metadata {
-    definition(name: "Zemismart ZigBee Wall Switch Multi-Gang", namespace: "muxa", author: "Muxa", importUrl: "https://raw.githubusercontent.com/kkossev/hubitat-muxa-fork/development/drivers/zemismart-zigbee-multigang-switch.groovy", singleThreaded: true) {
-        //capability "Initialize" removed 2023-03-14
+    definition(name: "Zemismart ZigBee Wall Switch Multi-Gang", namespace: "myL2", author: "SebyM", importUrl: "", singleThreaded: true) {
         capability "Actuator"
         capability "Configuration"
         capability "Refresh"
         capability "Switch"
-        capability "Health Check"
+        capability 'HealthCheck'
+        capability "PushableButton"
 
         fingerprint profileId: "0104", endpointId: "01", inClusters: "0003,0004,0005,0006,E000,E001,0000", outClusters: "0019,000A", model: "TS0001", manufacturer: "_TZ3000_npzfdcof", deviceJoinName: "Tuya Zigbee Switch"            // https://www.aliexpress.com/item/1005002852788275.html
         fingerprint profileId: "0104", endpointId: "01", inClusters: "0003,0004,0005,0006,E000,E001,0000", outClusters: "0019,000A", model: "TS0001", manufacturer: "_TZ3000_hktqahrq", deviceJoinName: "Tuya Zigbee Switch"
@@ -104,6 +73,7 @@ metadata {
         fingerprint profileId: "0104", endpointId: "01", inClusters: "0000,0003,0004,0005,0006", outClusters: "0019", model: "TS0004", manufacturer: "_TZ3000_excgg5kb", deviceJoinName: "Zemismart Zigbee Switch Multi-Gang"        // check!
         fingerprint profileId: "0104", endpointId: "01", inClusters: "0000,0003,0004,0005,0006", outClusters: "0019", model: "TS0004", manufacturer: "_TZ3000_a37eix1s", deviceJoinName: "Zemismart Zigbee Switch Multi-Gang"        // check!
         fingerprint profileId: "0104", endpointId: "01", inClusters: "0000,000A,0004,0005,0006", outClusters: "0019", model: "TS0004", manufacturer: "_TZ3000_go9rahj5", deviceJoinName: "Zemismart Zigbee Switch Multi-Gang"
+        fingerprint profileId: "0104", endpointId: "01", inClusters: "0003,0004,0005,0006,0702,0B04,E000,E001,0000", outClusters: "0019,000A", model: "TS0004", manufacturer: "_TZ3000_5ajpkyq6", deviceJoinName: "Zemismart Zigbee Switch Multi-Gang" //this
         fingerprint profileId: "0104", endpointId: "01", inClusters: "0003,0004,0005,0006,E000,E001", outClusters: "0019", model: "TS0004", manufacturer: "_TZ3000_aqgofyol", deviceJoinName: "Zemismart Zigbee Switch Multi-Gang"
         fingerprint profileId: "0104", endpointId: "01", inClusters: "0003,0004,0005,0006,E000,E001,0000", outClusters: "0019,000A", model: "TS0004", manufacturer: "_TZ3000_excgg5kb"        // 4-relays module
         fingerprint profileId: "0104", endpointId: "01", inClusters: "0003,0004,0005,0006,E000,E001,0000", outClusters: "0019,000A", model: "TS0004", manufacturer: "_TZ3000_w58g68s3"        // Yagusmart 3 gang zigbee switch
@@ -134,10 +104,6 @@ metadata {
         fingerprint profileId: "0104", endpointId: "01", inClusters: "0000,0003,0006", outClusters: "0019", model: "TS0013", manufacturer: "_TZ3000_h34ihclt", deviceJoinName: "Tuya Zigbee Switch Multi-Gang"                     // check!
         fingerprint profileId: "0104", endpointId: "01", inClusters: "0000,0003,0004,0005,0006", outClusters: "0019", model: "TS0013", manufacturer: "_TZ3000_k44bsygw", deviceJoinName: "Zemismart Zigbee Switch No Neutral"
         fingerprint profileId: "0104", endpointId: "01", inClusters: "0003,0004,0005,0006,0000", outClusters: "0019,000A", model: "TS0013", manufacturer: "_TZ3000_qewo8dlz", deviceJoinName: "Tuya Zigbee Switch 3 Gang No Neutral"    // @dingyang.yee https://www.aliexpress.com/item/4000298926256.html https://github.com/Koenkk/zigbee2mqtt/issues/6138#issuecomment-774720939
-        /* these do NOT work with Hubitat !
-        fingerprint profileId:"0104", endpointId:"01", inClusters:"0003,0004,0005,0006,E000,E001,0000", outClusters:"0019,000A", model:"TS011F", manufacturer:"_TZ3000_cfnprab5", deviceJoinName: "Xenon 4-gang + 2 USB extension"    //https://community.hubitat.com/t/xenon-4-gang-2-usb-extension-unable-to-switch-off-individual-sockets/101384/14?u=kkossev
-        fingerprint profileId:"0104", endpointId:"01", inClusters:"0000,0006,0003,0004,0005,E001",      outClusters:"0019,000A", model:"TS011F", manufacturer:"_TZ3000_cfnprab5", deviceJoinName: "Xenon 4-gang + 2 USB extension"    //https://community.hubitat.com/t/xenon-4-gang-2-usb-extension-unable-to-switch-off-individual-sockets/101384/14?u=kkossev
-        */
         fingerprint profileId: "0104", endpointId: "01", inClusters: "0000,0004,0005,0006", outClusters: "0019,000A", model: "TS011F", manufacturer: "_TZ3000_zmy1waw6", deviceJoinName: "Moes 1 gang"                                // https://github.com/zigpy/zha-device-handlers/issues/1262
         fingerprint profileId: "0104", endpointId: "01", inClusters: "0003,0004,0005,0006,0702,0B04,E000,E001,0000", outClusters: "0019,000A", model: "TS011F", manufacturer: "_TZ3000_18ejxno0", deviceJoinName: "Moes 2 gang"       // https://pl.aliexpress.com/item/1005002061628356.html
         fingerprint profileId: "0104", endpointId: "01", inClusters: "0003,0004,0005,0006,0702,0B04,E000,E001,0000", outClusters: "0019,000A", model: "TS011F", manufacturer: "_TZ3000_yf8iuzil", deviceJoinName: "Moes 2 gang"       // https://community.hubitat.com/t/moes-zigbee-wall-touch-smart-light-switch/97870/36?u=kkossev
@@ -151,7 +117,6 @@ metadata {
         fingerprint profileId: "0104", endpointId: "01", inClusters: "0000,0003,0006,0019", outClusters: "0003,0004,0019", manufacturer: "ShinaSystem", model: "ISM300Z3", deviceJoinName: "SiHAS Switch 3-gang"
         // NodOn
         fingerprint profileId: "0104", endpointId: "01", inClusters: "0000,0003,0004,0005,0006,0007,0008,1000,FC57", outClusters: "0003,0006,0019", manufacturer: "NodOn", model: "SIN-4-2-20", deviceJoinName: "NodOn Light 2 channels"
-        // https://nodon.pro/en/produits/zigbee-pro-on-off-lighting-relay-switch/
         fingerprint profileId: "0104", endpointId: "01", inClusters: "0000,0003,0004,0005,0006,0007,0008,1000,FC57", outClusters: "0003,0006,0019", manufacturer: "NodOn", model: "SIN-4-2-20_PRO", deviceJoinName: "NodOn Light 2 channels"
 
         command "powerOnState", [
@@ -160,15 +125,18 @@ metadata {
         command "switchType", [
                 [name: "switchType", type: "ENUM", constraints: ["--- Select ---", "toggle", "state", "momentary"], description: "Select Switch Type"]     // 0: 'toggle', 1: 'state', 2: 'momentary'
         ]
+/*
         command "ledMode", [
                 [name: "ledMode", type: "ENUM", constraints: ["--- Select ---", "Disabled", "Lit when On", "Lit when Off"], description: "Select LED Mode"]
         ]
+*/
+        command "renameChildren", [[name:"Start from", type: "NUMBER", description: "Number for the first channel"]]
+        command "resetAll"
         command "initialize", [[name: "Select 'Yes' to re-initialize the device", type: "ENUM", description: "re-creates the child devices!", constraints: ["--- Select ---", "Yes", "No"]]]
-        if (debug == true) {
-            command "test", ["string"]
-        }
 
         attribute "lastCheckin", "string"
+        attribute 'rtt', 'number'
+        attribute 'healthStatus', 'enum', ['offline', 'online', 'unknown']
     }
     preferences {
         input(name: "logEnable", type: "bool", title: "Enable debug logging", defaultValue: false)
@@ -185,9 +153,19 @@ private boolean noBindingButPolling() {
 }    //0x4001 OnTime: value 0 //0x4002 OffWaitTime: value 0
 
 // Parse incoming device messages to generate events
-
 def parse(String description) {
     checkDriverVersion()
+    unschedule('deviceCommandTimeout')
+    sendEvent(name:"lastCheckin", value: sdf().format((new Date()).getTime()))
+    def now = new Date().getTime()
+    Map lastTxMap = stringToJsonMap(state.lastTx)
+    if(lastTxMap.waiting){
+        def timeRunning = now.toInteger() - (lastTxMap.pingTime ?: '0').toInteger()
+        if (timeRunning < MAX_PING_MILISECONDS) {
+            sendRttEvent()
+        }
+    }
+    setHealthStatusOnline()
     //log.debug "${device.displayName} Parsing '${description}'"
     def descMap = [:]
     try {
@@ -298,7 +276,7 @@ def parseBasicClusterAttribute(Map it) {
             logDebug "ZLC version: ${it.value}"        // default 0x03
             break
         case "0001":
-            logDebug "Applicaiton version: ${it.value}"    // For example, 0b 01 00 0001 = 1.0.1, where 0x41 is 1.0.1
+            logDebug "Application version: ${it.value}"    // For example, 0b 01 00 0001 = 1.0.1, where 0x41 is 1.0.1
             break                                                            // https://developer.tuya.com/en/docs/iot-device-dev/tuya-zigbee-lighting-dimmer-swith-access-standard?id=K9ik6zvlvbqyw
         case "0002":
             logDebug "Stack version: ${it.value}"        // default 0x02
@@ -321,7 +299,7 @@ def parseBasicClusterAttribute(Map it) {
             break
         case "FFE2":
         case "FFE4":
-            logDebug "Attribite ${it.attrId} : ${it.value}"
+            logDebug "Attribute ${it.attrId} : ${it.value}"
             break
         case "FFFD":    // Cluster Revision (Tuya specific)
             logDebug "Cluster Revision 0xFFFD: ${it.value}"    //uint16 -0x21 default 0x0001
@@ -350,7 +328,9 @@ def processOnOff(it, descMap) {
     if (cd != null) {
         if (descMap.command in ["0A", "0B"]) {
             // switch toggled
-            cd.parse([[name: "switch", value: switchAttribute, descriptionText: "Child switch ${descMap.endpoint} turned $switchAttribute"]])
+            cd.parse([[name: "switch", value: switchAttribute]])
+            sendEvent(name:"pushed", value: descMap.endpoint, isStateChange: true)
+            log.info ("${cd.getLabel()} (#${descMap.endpoint}) was turned $switchAttribute")
         } else if (descMap.command == "01") {
             // report switch status
             cd.parse([[name: "switch", value: switchAttribute, descriptionText: "Child switch  ${descMap.endpoint} is $switchAttribute"]])
@@ -386,13 +366,17 @@ def on() {
     "he cmd 0x${device.deviceNetworkId} 0xFF 0x0006 0x1 {}"
 }
 
+def push(button){
+    def childId = "${device.id}-0${button}"
+    def existingChild = getChildDevices()?.find { it.deviceNetworkId == childId }
+    if (existingChild) {
+        if(existingChild.currentValue("switch")=="off"){existingChild.on()}else(existingChild.off())
+    }
+}
+
 def refresh() {
     logDebug "refreshing"
     "he rattr 0x${device.deviceNetworkId} 0xFF 0x0006 0x0"
-}
-
-def ping() {
-    refresh()
 }
 
 private Integer convertHexToInt(hex) {
@@ -484,14 +468,14 @@ def createChildDevices(int buttons) {
             log.info "${device.displayName} Child device ${childId} already exists (${existingChild})"
         } else {
             log.info "${device.displayName} Creatung device ${childId}"
-            addChildDevice("hubitat", "Generic Component Switch", childId, [isComponent: true, name: "Switch EP0${i}", label: "${device.displayName} EP0${i}"])
+            newDevice = addChildDevice("hubitat", "Generic Component Switch", childId, [isComponent: true, name: "Switch EP0${i}", label: "${device.displayName} EP0${i}"])
+            newDevice.updateSetting("logEnable", false)
         }
     }
 }
 
 def deleteObsoleteChildren() {
     logDebug "Parent deleteChildren"
-
     getChildDevices().each { child ->
         if (!child.deviceNetworkId.startsWith(device.id) || child.deviceNetworkId == "${device.id}-00") {
             log.info "${device.displayName} Deleting ${child.deviceNetworkId}"
@@ -530,9 +514,11 @@ def initialize( str ) {
 }
 def initialize() {
     logDebug "Initializing..."
+    runIn( defaultPollingInterval, deviceHealthCheck, [overwrite: true, misfire: 'ignore'])
     initializeVars(fullInit = true)
-    configure()    // added 11/12/2022
+    configure()
     setupChildDevices()
+    setLogsOffTask()
 }
 
 def installed() {
@@ -543,6 +529,7 @@ def installed() {
 
 def updated() {
     logDebug "Parent updated"
+    setLogsOffTask()
 }
 
 def tuyaBlackMagic() {
@@ -554,6 +541,7 @@ def tuyaBlackMagic() {
 
 def configure() {
     logDebug " configure().."
+    resetStats()
     List<String> cmds = []
     if (device.data.manufacturer in ["_TZ3000_cfnprab5", "_TZ3000_okaz9tjs"]) {
         log.warn "this device ${device.data.manufacturer} is known to NOT work with HE!"
@@ -572,13 +560,14 @@ def configure() {
         cmds += zigbee.onOffRefresh()
     }
     sendZigbeeCommands(cmds)
+    powerOnState("OFF");
+    setLogsOffTask()
 }
 
 void sendZigbeeCommands(List<String> cmds) {
     logDebug "sendZigbeeCommands : ${cmds}"
     sendHubCommand(new hubitat.device.HubMultiAction(cmds, hubitat.device.Protocol.ZIGBEE))
 }
-
 
 def logDebug(msg) {
     String sDnMsg = device?.displayName + " " + msg
@@ -659,7 +648,6 @@ def ledMode(mode) {
     sendZigbeeCommands(cmds)
 }
 
-
 def processOnOfClusterOtherAttr(Map it) {
     //logDebug "processOnOfClusterOtherAttr attribute ${it.attrId} value=${it.value}"
     def mode
@@ -708,8 +696,134 @@ def processOnOfClusterOtherAttr(Map it) {
     if (txtEnable) log.info "${device.displayName} ${attrName} is: ${mode} (${value})"
 }
 
-def test(description) {
-    log.warn "testing <b>${description}</b>"
-    parse(description)
+def resetAll(){
+    state = [:]
+    device.getCurrentStates().each {currentState ->
+        device.deleteCurrentState(currentState.attributeName)
+    }
+    List<String> settingKeys = new ArrayList<>(settings.keySet())
+    settingKeys.each() { k ->
+        device.removeSetting(k)
+    }
+    List<com.hubitat.app.ChildDeviceWrapper> children = getChildDevices()
+    children.each {child->
+  		deleteChildDevice(child.deviceNetworkId)
+    }
+    unschedule()
+    log.warn("All data cleared")
 }
 
+void setLogsOffTask() {
+	if (logEnable) {
+        runIn(1800, "logsOff")
+    }
+}
+
+def renameChildren(startFrom=1){
+    List<com.hubitat.app.ChildDeviceWrapper> children = getChildDevices()
+    int currentNumber = startFrom
+    def name = device.getLabel().replace("Relay", "Switch")
+    children.each {child->
+        child.setLabel("${name} ${currentNumber}")
+        currentNumber++
+    }
+
+}
+
+void logsOff() {
+    device.clearSetting("logEnable")
+    device.removeSetting("logEnable")
+}
+
+def setHealthStatusOnline() {
+    if (!((device.currentValue('healthStatus') ?: 'unknown') in ['online']))  {
+        sendHealthStatusEvent('online')
+        runIn(defaultPollingInterval, deviceHealthCheck, [overwrite: true, misfire: 'ignore'])
+    }
+    state.notPresentCounter = 0
+}
+
+def deviceHealthCheck() {
+    if (state.notPresentCounter != null) {
+        state.notPresentCounter = state.notPresentCounter + 1
+        if (state.notPresentCounter >= presenceCountTreshold) {
+            if ((device.currentValue('healthStatus') ?: 'unknown') != 'offline' ) {
+                log.warn 'not present!'
+                sendHealthStatusEvent('offline')
+            }
+        }
+    }
+    else {
+        state.notPresentCounter = 0
+    }
+    runIn(defaultPollingInterval, deviceHealthCheck, [overwrite: true, misfire: 'ignore'])
+}
+
+void sendHealthStatusEvent(value) {
+    def descriptionText = "healthStatus changed to ${value}"
+    sendEvent(name: 'healthStatus', value: value, descriptionText: descriptionText, isStateChange: true, isDigital: true)
+    if (value == 'online') {
+        logInfo "${descriptionText}"
+    }
+    else {
+        if (settings?.txtEnable) { log.warn "${device.displayName}} <b>${descriptionText}</b>" }
+    }
+}
+
+void sendRttEvent( String value=null) {
+    def now = new Date().getTime()
+    Map lastTxMap = stringToJsonMap(state.lastTx)
+    lastTxMap.waiting = false
+    state.lastTx = mapToJsonString(lastTxMap)
+    def timeRunning = now.toInteger() - (lastTxMap.pingTime ?: now).toInteger()
+    def descriptionText = "Round-trip time is ${timeRunning} (ms)"
+    if (value == null) {
+        logInfo "${descriptionText}"
+        sendEvent(name: 'rtt', value: timeRunning, descriptionText: descriptionText, unit: 'ms', isDigital: true)
+    }
+    else {
+        descriptionText = "Round-trip time is ${value}"
+        logInfo "${descriptionText}"
+        sendEvent(name: 'rtt', value: value, descriptionText: descriptionText, isDigital: true)
+    }
+}
+
+def ping() {
+    logInfo 'ping...'
+    scheduleCommandTimeoutCheck()
+    Map lastTxMap = stringToJsonMap(state.lastTx)
+    lastTxMap.waiting = true
+    lastTxMap.pingTime = new Date().getTime()
+    sendZigbeeCommands( zigbee.readAttribute(zigbee.BASIC_CLUSTER, 0x01, [:], 0) )
+    state.lastTx = mapToJsonString(lastTxMap)
+}
+
+void resetStats() {
+    Map lastTx = [waiting:false]
+    state.lastTx =  mapToJsonString( lastTx )
+    if (txtEnable == true) log.info "${device.displayName} Statistics were reset. Press F5 to refresh the device page"
+}
+
+private void scheduleCommandTimeoutCheck(int delay = 10) {
+    runIn(delay, 'deviceCommandTimeout')
+}
+
+void deviceCommandTimeout() {
+    log.warn 'no response received (sleepy device or offline?)'
+    sendRttEvent('timeout')
+}
+
+@CompileStatic
+String mapToJsonString( Map map) {
+    if (map == null || map == [:]) return ''
+    String str = JsonOutput.toJson(map)
+    return str
+}
+
+@CompileStatic
+Map stringToJsonMap( String str) {
+    if (str == null) return [:]
+    JsonSlurper jsonSlurper = new JsonSlurper()
+    Map map = jsonSlurper.parseText( str ) as Map
+    return map
+}
