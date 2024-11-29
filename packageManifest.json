@@ -82,7 +82,7 @@
       "namespace": "muxa",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/SmartWise/zemismart-zigbee-multigang-switch.groovy",
       "required": false,
-      "version": "1.0"
+      "version": "1.1"
     },
     {
       "id": "88a58f33-d5e3-49be-b862-421f78d61f8a",
