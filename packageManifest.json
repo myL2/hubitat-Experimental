@@ -117,12 +117,11 @@
       "version": "1.0"
     },
     {
-      "id": "676ff945-d134-4fd6-b25f-b2c7271cb1de",
-      "name": "Smartly Inject",
-      "namespace": "oh-lalabs.com",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/smartly/smartly-inject-expanded.groovy",
-      "required": false,
-      "version": "1.1"
+      "id": "b8a4f46c-e023-470c-879d-b2dc3a0791d3",
+      "name": "",
+      "namespace": "",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/refs/heads/main/Zemismart/ZemiSmart%20Zigbee%20Blind%20Mod2.groovy",
+      "required": false
     }
   ],
   "apps": [
@@ -177,24 +176,5 @@
       "version": "1.0"
     }
   ],
-  "files": [
-    {
-      "id": "4e1ace6d-e853-4fd8-a6b9-bc83d0047875",
-      "name": "smartly.js",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/smartly/0f211437-fff7-592d-bd7d-4c0524cfeeb7-smartly.js",
-      "version": "1.1"
-    },
-    {
-      "id": "1947a0ac-6136-4390-82ae-ef77993ff03c",
-      "name": "usermode.json",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/smartly/3e258ced-82e0-5387-90c2-aa78743abff5-usermode.json",
-      "version": "1.1"
-    },
-    {
-      "id": "7430bc2a-45d0-4b93-8fe0-1ee79464dbcd",
-      "name": "smartly-injected.min.css",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/smartly/a08eec5a-f464-51de-bd7c-5a9b622676d7-smartly-injected.min.css",
-      "version": "1.1"
-    }
-  ]
+  "files": []
 }
