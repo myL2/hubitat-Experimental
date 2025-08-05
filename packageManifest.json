@@ -122,6 +122,27 @@
       "namespace": "",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/refs/heads/main/Zemismart/ZemiSmart%20Zigbee%20Blind%20Mod2.groovy",
       "required": false
+    },
+    {
+      "id": "4d71beaa-ca3a-4c1b-97ed-bf6ba0c8bdae",
+      "name": "",
+      "namespace": "",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/refs/heads/main/Tuya/Tuya_Zigbee_TRVs_and_Thermostats_Test.groovy",
+      "required": false
+    },
+    {
+      "id": "2c589b5d-aa30-4cff-a57e-eb363465eb62",
+      "name": "",
+      "namespace": "",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/refs/heads/main/Tuya/Tuya%20Zigbee%20Power%20Meter.groovy",
+      "required": false
+    },
+    {
+      "id": "c2b955f0-06c0-4e81-af05-d0a8e42a95eb",
+      "name": "Tuya Zigbee Power Meter Child",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/refs/heads/main/Tuya/Tuya%20Zigbee%20Power%20Meter%20Child.groovy",
+      "required": false
     }
   ],
   "apps": [
