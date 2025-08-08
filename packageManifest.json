@@ -118,21 +118,21 @@
     },
     {
       "id": "b8a4f46c-e023-470c-879d-b2dc3a0791d3",
-      "name": "",
+      "name": "Zemismart ZigBee Blind Mod2",
       "namespace": "",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/refs/heads/main/Zemismart/ZemiSmart%20Zigbee%20Blind%20Mod2.groovy",
       "required": false
     },
     {
       "id": "4d71beaa-ca3a-4c1b-97ed-bf6ba0c8bdae",
-      "name": "",
+      "name": "Tuya Zigbee TRVs and Thermostats Test",
       "namespace": "",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/refs/heads/main/Tuya/Tuya_Zigbee_TRVs_and_Thermostats_Test.groovy",
       "required": false
     },
     {
       "id": "2c589b5d-aa30-4cff-a57e-eb363465eb62",
-      "name": "",
+      "name": "Tuya Zigbee Power Meter",
       "namespace": "",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/refs/heads/main/Tuya/Tuya%20Zigbee%20Power%20Meter.groovy",
       "required": false
