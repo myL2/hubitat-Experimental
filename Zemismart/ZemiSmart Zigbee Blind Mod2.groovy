@@ -974,29 +974,33 @@ void setPosition(final BigDecimal positionParam) {
     } else {
         actualPercentageAdjust = percentageAdjustClose?:0
     }
-    position = position + actualPercentageAdjust;
+    position = position;
     if (position < 0) {position = 0} else if(position > 100) {position = 100}
-
-    state.target = position
-    sendEvent(name: 'targetPosition', value: position, type: 'digital')
-    if (isWithinOne(position)) {
-        logDebug('setPosition: no need to move!')
-        updateWindowShadeArrived(position)
-        state.isTargetRcvd = false
-        return null
-    }
-    updateWindowShadeMoving(position)
-    logDebug("setPosition: target is ${position}, currentPosition=${device.currentValue('position')}")
-    if (invertPosition == true) {
-        position = 100 - position
-    }
-    restartPositionReportTimeout()
-    state.isTargetRcvd = false
-
-    if (isTS130F()) {
-        sendZigbeeCommands(zigbee.command(0x0102, DP_COMMAND_LIFTPERCENT as int, zigbee.convertToHexString(position.intValue(), 1)))
+    if (position < 5 || position > 95) {
+        if (position < 5) {close()}
+        if (position > 95) {open()}
     }else{
-        sendTuyaCommand(DP_ID_TARGET_POSITION, DP_TYPE_VALUE, position.intValue(), 8)
+        state.target = position
+        sendEvent(name: 'targetPosition', value: position, type: 'digital')
+        if (isWithinOne(position)) {
+            logDebug('setPosition: no need to move!')
+            updateWindowShadeArrived(position)
+            state.isTargetRcvd = false
+            return null
+        }
+        updateWindowShadeMoving(position)
+        logDebug("setPosition: target is ${position}, currentPosition=${device.currentValue('position')}")
+        if (invertPosition == true) {
+            position = 100 - position
+        }
+        restartPositionReportTimeout()
+        state.isTargetRcvd = false
+
+        if (isTS130F()) {
+            sendZigbeeCommands(zigbee.command(0x0102, DP_COMMAND_LIFTPERCENT as int, zigbee.convertToHexString(position.intValue(), 1)))
+        }else{
+            sendTuyaCommand(DP_ID_TARGET_POSITION, DP_TYPE_VALUE, position.intValue(), 8)
+        }
     }
 }
 
