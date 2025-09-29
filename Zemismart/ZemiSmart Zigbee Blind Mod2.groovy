@@ -965,6 +965,7 @@ void setPosition(final BigDecimal positionParam) {
         throw new Exception("Invalid position ${position}. Position must be between 0 and 100 inclusive.")
     }
 
+    /*
     int percentageAdjustOpen = settings?.percentageAdjustOpen as Integer
     int percentageAdjustClose = settings?.percentageAdjustClose as Integer
     int actualPercentageAdjust = 0;
@@ -975,6 +976,7 @@ void setPosition(final BigDecimal positionParam) {
         actualPercentageAdjust = percentageAdjustClose?:0
     }
     position = position;
+    */
     if (position < 0) {position = 0} else if(position > 100) {position = 100}
     if (position < 5 || position > 95) {
         if (position < 5) {close()}
