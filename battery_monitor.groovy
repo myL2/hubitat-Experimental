@@ -1,6 +1,6 @@
 // ============================================================
 // Battery Monitor 2.0
-// Version 2.4.3
+// Version 2.4.4
 // Author: Jdthomas24
 // Namespace: jdthomas24
 // Description: Advanced Hubitat battery monitoring with analytics, trends and replacement tracking (v2.3.2). Auto-adjusts drain for low-activity devices.
@@ -15,7 +15,7 @@ definition(
     iconUrl: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery.png",
     iconX2Url: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery@2x.png",
     iconX3Url: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery@2x.png",
-    version: "2.4.3",
+    version: "2.4.4",
     importUrl: "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/battery_monitor.groovy"
 )
 def installed() {
@@ -78,7 +78,8 @@ def mainPage() {
         // ================= Auto Battery Discovery =============
 section("Auto Battery Discovery") {
     paragraph "<b>⚠ Important: The app automatically detects all devices reporting battery levels. " +
-          "Select the devices you want to monitor from the list below. Only selected devices will be tracked for trends, battery health, and notifications.</b>"
+          "Select the devices you want to monitor from the list below. Only selected devices will be tracked for trends, battery health, and notifications.</b><br><br>" +
+          "<b>Tip:</b> Also select your <b>HubConnect Remote Hub</b> devices to show hub names in reports instead of IP addresses."
 
     // ⚠ Mobile note for long device names
     paragraph "<span style='color:red; font-weight:bold;'>Note for mobile users:</span> If your device names are long, they may extend past the screen in the selection list. This is a UI limitation on smaller screens. You can still select devices as usual."
@@ -109,15 +110,6 @@ section("Auto Battery Discovery") {
         }
     }
 }
-        // ================= HubConnect Hubs =================
-        section("Hub Names (optional)") {
-            paragraph "Enter the app ID of your HubConnect instance to automatically resolve hub names in reports. " +
-                      "Find it in Apps → HubConnect → the number in the browser URL."
-            input "hubConnectAppId", "number",
-                  title: "HubConnect App ID",
-                  required: false
-        }
-
         // ================= Battery Scan Interval =================
         section("Battery Scan Interval") {
             input "scanInterval", "enum",
@@ -422,14 +414,9 @@ def getHubIpForDevice(device) {
 
 def getHubNameForIp(ip) {
     if (!ip) return "Centrala"
-    if (!hubConnectAppId) return ip
-    def allApps = parent?.getChildApps()
-    log.debug "BatteryMonitor: parent=${parent?.class}, allApps=${allApps?.size()}"
-    def hubConnectParent = allApps?.find { it.id == hubConnectAppId as Long }
-    log.debug "BatteryMonitor: hubConnectParent=${hubConnectParent?.label}, childApps=${hubConnectParent?.childApps?.size()}"
-    def allDevices = hubConnectParent?.childApps?.collectMany { it.getChildDevices() ?: [] }
-    log.debug "BatteryMonitor: looking for hub-${ip} among DNIs=${allDevices?.collect { it.deviceNetworkId }}"
-    def hubDev = allDevices?.find { it.deviceNetworkId == "hub-${ip}" }
+    // HubConnect Remote Hub devices have capability "Battery" so they appear in autoDevices.
+    // They never report a battery value so they are filtered out of all display tables automatically.
+    def hubDev = autoDevices?.find { it.deviceNetworkId == "hub-${ip}" }
     return hubDev?.displayName ?: ip
 }
 
