@@ -1,6 +1,6 @@
 // ============================================================
 // Battery Monitor 2.0
-// Version 2.4.6
+// Version 2.4.7
 // Author: Jdthomas24
 // Namespace: jdthomas24
 // Description: Advanced Hubitat battery monitoring with analytics, trends and replacement tracking (v2.3.2). Auto-adjusts drain for low-activity devices.
@@ -15,7 +15,7 @@ definition(
     iconUrl: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery.png",
     iconX2Url: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery@2x.png",
     iconX3Url: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery@2x.png",
-    version: "2.4.6",
+    version: "2.4.7",
     importUrl: "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/battery_monitor.groovy"
 )
 def installed() {
@@ -375,10 +375,10 @@ def estDays(device){
 }
 def health(device){
     def drain=getDrain(device)
-    if(drain<0.3) return "Excellent"
-    if(drain<0.7) return "Good"
-    if(drain<1.2) return "Fair"
-    return "Poor"
+    if(drain<0.3) return "Excelentă"
+    if(drain<0.7) return "Bună"
+    if(drain<1.2) return "Acceptabilă"
+    return "Slabă"
 }
 
 // ============================================================
@@ -487,7 +487,7 @@ def getBatteryLevelDisplay(level, device=null){
     }
 
     if(device && showTag){
-        label += " (Recently Replaced)"
+        label += " (Înlocuită recent)"
     }
 
     return label
@@ -558,25 +558,25 @@ def logReplacement(device, newLevel, manual=false){
 // ===================== SUMMARY PAGE ========================
 // ============================================================
 def summaryPage(){
-    dynamicPage(name:"summaryPage",title:"Battery Summary",install:false){
+    dynamicPage(name:"summaryPage",title:"Rezumat Baterie",install:false){
 
         // 🛑 FIRST RUN PROTECTION
         if(!state.history || state.history.size() == 0){
-            section("Setup Required"){
-                paragraph "⚠ <b>Setup Not Complete</b><br><br>" +
-                          "You must click <b>Done</b> after selecting your devices before viewing reports.<br><br>" +
-                          "Please exit the app and reopen it, then try again."
+            section("Configurare Necesară"){
+                paragraph "⚠ <b>Configurare incompletă</b><br><br>" +
+                          "Trebuie să apăsați <b>Done</b> după selectarea dispozitivelor înainte de a vedea rapoartele.<br><br>" +
+                          "Ieșiți din aplicație și redeschideți-o, apoi încercați din nou."
             }
             return
         }
 
         section(){
-            input "filterActionOnly", "bool", title: "Show only devices requiring action", defaultValue: true, submitOnChange: true
+            input "filterActionOnly", "bool", title: "Afișează doar dispozitivele care necesită acțiune", defaultValue: true, submitOnChange: true
         }
 
         def devs = (autoDevices ?: []).findAll{ it?.currentValue("battery") != null }
         if(!devs){
-            section("Battery Summary"){ paragraph "No battery devices found." }
+            section("Rezumat Baterie"){ paragraph "Niciun dispozitiv cu baterie găsit." }
             return
         }
 
@@ -588,7 +588,7 @@ def summaryPage(){
                 level <= 25 || activityRed
             }
             if(!devs){
-                section("Battery Summary"){ paragraph "No devices currently require action." }
+                section("Rezumat Baterie"){ paragraph "Niciun dispozitiv nu necesită acțiune în prezent." }
                 return
             }
         }
@@ -600,8 +600,8 @@ def summaryPage(){
             }
         }
 
-        section("Legend") {
-            paragraph "<b>Device name suffixes:</b> LS = Leak Sensor &nbsp;|&nbsp; MS = Motion Sensor &nbsp;|&nbsp; TH = Temperature Sensor &nbsp;|&nbsp; TRV = ThermoRadiator Valve &nbsp;|&nbsp; SW = Button"
+        section("Legendă") {
+            paragraph "<b>Sufixe nume dispozitiv:</b> LS = Senzor Scurgere &nbsp;|&nbsp; MS = Senzor Mișcare &nbsp;|&nbsp; TH = Senzor Temperatură &nbsp;|&nbsp; TRV = Ventil Termostat &nbsp;|&nbsp; SW = Buton"
         }
     }
 }
@@ -609,7 +609,7 @@ def summaryPage(){
 def buildSummaryTable(devs) {
     def table="<table style='width:100%; border-collapse: collapse;'>"
     table+="<tr style='font-weight:bold;'>"
-    table+="<td>Action</td><td>Device</td><td>Battery</td><td>Drain</td><td>Est Days</td><td>Health</td><td>Last Battery</td><td>Last Activity</td>"
+    table+="<td>Acțiune</td><td>Dispozitiv</td><td>Baterie</td><td>Consum</td><td>Zile Est.</td><td>Stare</td><td>Ultima Baterie</td><td>Ultima Activitate</td>"
     table+="</tr>"
 
     def rowIdx = 0
@@ -627,7 +627,7 @@ def buildSummaryTable(devs) {
 
         def batteryRed = level <= 25
         def activityRed = isActivityRed(device)
-        def action = batteryRed ? "Replace" : (activityRed ? "Connect" : "")
+        def action = batteryRed ? "Înlocuiește" : (activityRed ? "Reconectează" : "")
 
         def rowBg = (rowIdx % 2 == 0) ? "#f9f9f9" : "#ffffff"
         rowIdx++
