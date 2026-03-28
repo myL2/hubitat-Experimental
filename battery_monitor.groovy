@@ -1,6 +1,6 @@
 // ============================================================
 // Battery Monitor 2.0
-// Version 2.4.9
+// Version 2.5.0
 // Author: Jdthomas24
 // Namespace: jdthomas24
 // Description: Advanced Hubitat battery monitoring with analytics, trends and replacement tracking (v2.3.2). Auto-adjusts drain for low-activity devices.
@@ -15,9 +15,15 @@ definition(
     iconUrl: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery.png",
     iconX2Url: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery@2x.png",
     iconX3Url: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery@2x.png",
-    version: "2.4.9",
-    importUrl: "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/battery_monitor.groovy"
+    version: "2.5.0",
+    importUrl: "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/battery_monitor.groovy",
+    oauth: true
 )
+
+mappings {
+    path("/summary") { action: [GET: "apiSummary"] }
+}
+
 def installed() {
     log.debug "Installed - initializing app"
     initialize()
@@ -432,6 +438,12 @@ def groupDevicesByHub(devs) {
     return groups.sort { a, b -> a.key <=> b.key }
 }
 
+def getBatteryType(device) {
+    def batteryMap = ["CR2016": ["CS"], "CR2450": ["LS"], "CR2032": ["MS", "TH", "SW"], "AA": ["TRV"]]
+    def suffix = device.displayName.tokenize().last()?.toUpperCase()
+    return batteryMap.find { it.value.contains(suffix) }?.key ?: ""
+}
+
 def getLastBatteryTime(device){ return safeTime(state.history[device.id]?.lastDate) }
 def getLastActivityTime(device){
     def last = device.lastActivity
@@ -609,21 +621,14 @@ def summaryPage(){
             lvl < 30 || disconnected
         }
         if (replaceDevs) {
-            def batteryMap = [
-                "CR2016": ["CS"],
-                "CR2450": ["LS"],
-                "CR2032": ["MS", "TH", "SW"],
-                "AA":     ["TRV"]
-            ]
             def counts = [:]
             replaceDevs.each { device ->
-                def suffix = device.displayName.tokenize().last()?.toUpperCase()
-                batteryMap.each { battType, suffixes ->
-                    if (suffixes.contains(suffix)) {
-                        if (!counts[battType]) counts[battType] = [total: 0, breakdown: [:]]
-                        counts[battType].total++
-                        counts[battType].breakdown[suffix] = (counts[battType].breakdown[suffix] ?: 0) + 1
-                    }
+                def bt = getBatteryType(device)
+                if (bt) {
+                    if (!counts[bt]) counts[bt] = [total: 0, breakdown: [:]]
+                    def suffix = device.displayName.tokenize().last()?.toUpperCase()
+                    counts[bt].total++
+                    counts[bt].breakdown[suffix] = (counts[bt].breakdown[suffix] ?: 0) + 1
                 }
             }
             if (counts) {
@@ -920,8 +925,61 @@ def infoPage(Map params = [:]){
             paragraph "If a device shows high drain:\n• Check signal strength (Z-Wave/Zigbee routing)\n• Verify device isn't reporting too frequently\n• Confirm correct battery type is used\n• Look for environmental factors (cold, humidity)\n• Consider device firmware or driver issues" 
         }
         
-        section("<b>💡 Tips</b>"){ 
-            paragraph "• Devices with consistent low drain are healthy\n• Sudden spikes usually indicate a problem\n• Compare similar devices to identify outliers\n" 
+        section("<b>💡 Tips</b>"){
+            paragraph "• Devices with consistent low drain are healthy\n• Sudden spikes usually indicate a problem\n• Compare similar devices to identify outliers\n"
         }
     }
+}
+
+// ============================================================
+// ===================== JSON API ============================
+// ============================================================
+def apiSummary() {
+    def allDevs = (autoDevices ?: []).findAll { it?.currentValue("battery") != null }
+
+    def groups = groupDevicesByHub(allDevs)
+    def hubsJson = groups.collectEntries { hubName, hubDevs ->
+        [(hubName): hubDevs.collect { device ->
+            def level  = device.currentValue("battery")?.toInteger() ?: 100
+            def ts     = getLastActivityTime(device)
+            def actRed = ts ? ((now() - ts) / (1000*60)).toInteger() >= 10080 : true
+            def action = (level < 30) ? "replace" : (actRed ? "reconnect" : "")
+            [
+                device      : device.displayName,
+                battery     : level,
+                action      : action,
+                health      : health(device),
+                drain       : getDrain(device).round(2),
+                estDays     : estDays(device),
+                lastBattery : getLastBatteryTime(device),
+                lastActivity: ts,
+                batteryType : getBatteryType(device)
+            ]
+        }]
+    }
+
+    def needDevs = allDevs.findAll {
+        def lvl  = it.currentValue("battery")?.toInteger() ?: 100
+        def ts   = getLastActivityTime(it)
+        def disc = ts ? ((now() - ts) / (1000*60)).toInteger() >= 10080 : true
+        lvl < 30 || disc
+    }
+    def counts = [:]
+    needDevs.each { device ->
+        def bt = getBatteryType(device)
+        if (bt) {
+            if (!counts[bt]) counts[bt] = [total: 0, breakdown: [:]]
+            def suffix = device.displayName.tokenize().last()?.toUpperCase()
+            counts[bt].total++
+            counts[bt].breakdown[suffix] = (counts[bt].breakdown[suffix] ?: 0) + 1
+        }
+    }
+
+    def result = [
+        generated      : new Date().format("yyyy-MM-dd'T'HH:mm:ssZ", location.timeZone),
+        hubs           : hubsJson,
+        batteriesNeeded: counts
+    ]
+    render contentType: "application/json", data: groovy.json.JsonOutput.toJson(result)
+}
 }
