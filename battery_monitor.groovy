@@ -109,6 +109,15 @@ section("Auto Battery Discovery") {
         }
     }
 }
+        // ================= HubConnect Hubs =================
+        section("Hub Names (optional)") {
+            paragraph "Select your HubConnect Remote Hub devices to show hub names instead of IP addresses in reports."
+            input "hubConnectors", "capability.*",
+                  title: "HubConnect Remote Hub devices",
+                  multiple: true,
+                  required: false
+        }
+
         // ================= Battery Scan Interval =================
         section("Battery Scan Interval") {
             input "scanInterval", "enum",
@@ -413,7 +422,7 @@ def getHubIpForDevice(device) {
 
 def getHubNameForIp(ip) {
     if (!ip) return "Centrala"
-    def hubDev = autoDevices?.find { it.deviceNetworkId == "hub-${ip}" }
+    def hubDev = hubConnectors?.find { it.deviceNetworkId == "hub-${ip}" }
     return hubDev?.displayName ?: ip
 }
 
