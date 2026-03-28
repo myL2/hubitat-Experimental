@@ -58,6 +58,7 @@ const HTML = `<!DOCTYPE html>
        padding: 8px 10px; color: #555; white-space: nowrap; }
   td { font-size: .82rem; padding: 7px 10px; border-top: 1px solid #eef0f4;
        white-space: nowrap; }
+  td.col-device { white-space: normal; word-break: break-word; min-width: 120px; }
   tr:hover td { background: #fafbfd; }
 
   /* Responsive column visibility */
@@ -156,9 +157,9 @@ function renderTable(devices) {
   const rows = devices.map(d => {
     const cls = batteryClass(d.battery);
     return \`<tr>
-      <td>\${d.device}</td>
-      <td class="\${cls}">\${batteryDot(d.battery)} \${d.battery}%</td>
       <td>\${actionBadge(d.action)}</td>
+      <td class="col-device">\${d.device}</td>
+      <td class="\${cls}">\${batteryDot(d.battery)} \${d.battery}%</td>
       <td class="col-health">\${d.health || '—'}</td>
       <td class="col-drain">\${d.drain != null ? d.drain.toFixed(2) : '—'}</td>
       <td class="col-days">\${d.estDays != null ? d.estDays + 'z' : '—'}</td>
@@ -170,9 +171,9 @@ function renderTable(devices) {
 
   return \`<div class="tbl-wrap"><table>
     <thead><tr>
+      <th>Acțiune</th>
       <th>Dispozitiv</th>
       <th>Baterie</th>
-      <th>Acțiune</th>
       <th class="col-health">Stare</th>
       <th class="col-drain">Consum</th>
       <th class="col-days">Zile Est.</th>
