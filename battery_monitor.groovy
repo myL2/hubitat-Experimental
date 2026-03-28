@@ -1,6 +1,6 @@
 // ============================================================
 // Battery Monitor 2.0
-// Version 2.4.1
+// Version 2.4.2
 // Author: Jdthomas24
 // Namespace: jdthomas24
 // Description: Advanced Hubitat battery monitoring with analytics, trends and replacement tracking (v2.3.2). Auto-adjusts drain for low-activity devices.
@@ -15,7 +15,7 @@ definition(
     iconUrl: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery.png",
     iconX2Url: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery@2x.png",
     iconX3Url: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery@2x.png",
-    version: "2.4.1",
+    version: "2.4.2",
     importUrl: "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/battery_monitor.groovy"
 )
 def installed() {
@@ -422,11 +422,13 @@ def getHubIpForDevice(device) {
 
 def getHubNameForIp(ip) {
     if (!ip) return "Centrala"
-    if (!hubConnectAppId) return ip
-    // HubConnect hierarchy: parent app → childApps (Server Instances) → getChildDevices() (includes hub device)
+    if (!hubConnectAppId) { log.warn "BatteryMonitor: hubConnectAppId not set"; return ip }
     def hubConnectParent = location.installedApps?.find { it.id == hubConnectAppId as Long }
-    def hubDev = hubConnectParent?.childApps?.collectMany { it.getChildDevices() ?: [] }
-                                             ?.find { it.deviceNetworkId == "hub-${ip}" }
+    log.debug "BatteryMonitor: hubConnectAppId=${hubConnectAppId}, parent=${hubConnectParent?.label}, childApps=${hubConnectParent?.childApps?.size()}"
+    def allDevices = hubConnectParent?.childApps?.collectMany { it.getChildDevices() ?: [] }
+    log.debug "BatteryMonitor: allDevices DNIs=${allDevices?.collect { it.deviceNetworkId }}"
+    def hubDev = allDevices?.find { it.deviceNetworkId == "hub-${ip}" }
+    log.debug "BatteryMonitor: looking for hub-${ip}, found=${hubDev?.displayName}"
     return hubDev?.displayName ?: ip
 }
 
