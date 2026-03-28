@@ -1,6 +1,6 @@
 // ============================================================
 // Battery Monitor 2.0
-// Version 2.5.2
+// Version 2.5.3
 // Author: Jdthomas24
 // Namespace: jdthomas24
 // Description: Advanced Hubitat battery monitoring with analytics, trends and replacement tracking (v2.3.2). Auto-adjusts drain for low-activity devices.
@@ -15,7 +15,7 @@ definition(
     iconUrl: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery.png",
     iconX2Url: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery@2x.png",
     iconX3Url: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery@2x.png",
-    version: "2.5.2",
+    version: "2.5.3",
     importUrl: "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/battery_monitor.groovy",
     oauth: true
 )
@@ -977,7 +977,7 @@ def apiSummary() {
                 battery     : level,
                 action      : action,
                 health      : health(device),
-                drain       : getDrain(device).round(2),
+                drain       : (getDrain(device) as BigDecimal).setScale(2, java.math.RoundingMode.HALF_UP),
                 estDays     : estDays(device),
                 lastBattery : getLastBatteryTime(device),
                 lastActivity: ts,
