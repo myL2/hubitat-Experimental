@@ -1,6 +1,6 @@
 // ============================================================
 // Battery Monitor 2.0
-// Version 2.4.8
+// Version 2.4.9
 // Author: Jdthomas24
 // Namespace: jdthomas24
 // Description: Advanced Hubitat battery monitoring with analytics, trends and replacement tracking (v2.3.2). Auto-adjusts drain for low-activity devices.
@@ -15,7 +15,7 @@ definition(
     iconUrl: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery.png",
     iconX2Url: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery@2x.png",
     iconX3Url: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery@2x.png",
-    version: "2.4.8",
+    version: "2.4.9",
     importUrl: "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/battery_monitor.groovy"
 )
 def installed() {
@@ -304,7 +304,7 @@ def updateBattery(device, level){
     data.lastDate = now()
 
     // Critical report check
-    if(reportFrequency == "critical" && level <= 25){
+    if(reportFrequency == "critical" && level < 30){
         sendCriticalReport(device, level)
     }
 }
@@ -585,7 +585,7 @@ def summaryPage(){
                 def level = device.currentValue("battery")?.toInteger() ?: 100
                 def ts = getLastActivityTime(device)
                 def activityRed = ts ? ((now() - ts) / (1000*60)).toInteger() >= 10080 : true
-                level <= 25 || activityRed
+                level < 30 || activityRed
             }
             if(!devs){
                 section("Rezumat Baterie"){ paragraph "Niciun dispozitiv nu necesită acțiune în prezent." }
@@ -602,8 +602,11 @@ def summaryPage(){
 
         // Battery estimate based on Replace-action devices
         def replaceDevs = (autoDevices ?: []).findAll {
-            it?.currentValue("battery") != null &&
-            (it.currentValue("battery")?.toInteger() ?: 100) <= 25
+            if (it?.currentValue("battery") == null) return false
+            def lvl = it.currentValue("battery")?.toInteger() ?: 100
+            def ts = getLastActivityTime(it)
+            def disconnected = ts ? ((now() - ts) / (1000*60)).toInteger() >= 10080 : true
+            lvl < 30 || disconnected
         }
         if (replaceDevs) {
             def batteryMap = [
@@ -661,7 +664,7 @@ def buildSummaryTable(devs) {
         def stale = isStale(device)
         def color = getBatteryLevelDisplay(level, device)
 
-        def batteryRed = level <= 25
+        def batteryRed = level < 30
         def activityRed = isActivityRed(device)
         def action = batteryRed ? "Înlocuiește" : (activityRed ? "Reconectează" : "")
 
