@@ -199,6 +199,16 @@
       "oauth": false,
       "primary": false,
       "version": "1.0"
+    },
+    {
+      "id": "f509b4e4-8ee9-48f6-87ab-c03f50a98914",
+      "name": "Battery Monitor 2.0",
+      "namespace": "jdthomas24",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/battery_monitor.groovy",
+      "required": false,
+      "oauth": false,
+      "primary": false,
+      "version": "2.3.6"
     }
   ],
   "files": []
