@@ -2,7 +2,7 @@
 
 const http = require('http');
 const PORT = process.env.PORT || 3000;
-const HUBITAT_URL = 'http://192.168.250.200/apps/api/80/summary?access_token=190245b7-d66d-49dd-9385-d2f70f92b699';
+const HUBITAT_URL = 'http://192.168.10.250/apps/api/80/summary?access_token=190245b7-d66d-49dd-9385-d2f70f92b699';
 
 // ─── Proxy ───────────────────────────────────────────────────────────────────
 
