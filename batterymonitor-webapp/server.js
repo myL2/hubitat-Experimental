@@ -266,6 +266,6 @@ http.createServer(async (req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     res.end(HTML);
   }
-}).listen(PORT, () => {
-  console.log(`Battery Monitor running on http://localhost:${PORT}`);
+}).listen(PORT, '0.0.0.0', () => {
+  console.log(`Battery Monitor running on http://0.0.0.0:${PORT}`);
 });
