@@ -401,6 +401,33 @@ def safeHistory(device){
     return data
 }
 
+// ============================================================
+// ===================== HUB GROUPING HELPERS =================
+// ============================================================
+def getHubIpForDevice(device) {
+    def dni = device.deviceNetworkId
+    if (!dni || !dni.contains(".")) return null   // local / non-IP DNI (e.g. Zigbee hex)
+    return dni.tokenize(":")[0]                   // "192.168.10.140:86" → "192.168.10.140"
+}
+
+def getHubNameForIp(ip) {
+    if (!ip) return "Centrala"
+    def hubDev = autoDevices?.find { it.deviceNetworkId == ip }
+    return hubDev?.displayName ?: ip
+}
+
+def groupDevicesByHub(devs) {
+    def groups = [:]
+    devs.each { device ->
+        def ip   = getHubIpForDevice(device)
+        def name = ip ? getHubNameForIp(ip) : "Centrala"
+        if (!groups.containsKey(name)) groups[name] = []
+        groups[name] << device
+    }
+    groups.each { k, v -> groups[k] = v.sort { it.currentValue("battery")?.toInteger() ?: 100 } }
+    return groups.sort { a, b -> a.key <=> b.key }
+}
+
 def getLastBatteryTime(device){ return safeTime(state.history[device.id]?.lastDate) }
 def getLastActivityTime(device){
     def last = device.lastActivity
@@ -539,104 +566,105 @@ def summaryPage(){
             return
         }
 
-        section("Battery Summary"){
-            def devs = (autoDevices ?: []).findAll{ it?.currentValue("battery") != null }
-            devs = devs.sort{ a,b -> (a.currentValue("battery") ?: 100) <=> (b.currentValue("battery") ?: 100) }
-            if(!devs){
-                paragraph "No battery devices found."
-                return
+        def devs = (autoDevices ?: []).findAll{ it?.currentValue("battery") != null }
+        if(!devs){
+            section("Battery Summary"){ paragraph "No battery devices found." }
+            return
+        }
+
+        def groups = groupDevicesByHub(devs)
+        groups.each { hubName, hubDevs ->
+            section("Hub: ${hubName}"){
+                paragraph buildSummaryTable(hubDevs)
             }
-
-            def table="<table style='width:100%; border-collapse: collapse;'>"
-            table+="<tr style='font-weight:bold;'>"
-            table+="<td>Action</td><td>Device</td><td>Battery</td><td>Drain</td><td>Est Days</td><td>Health</td><td>Last Battery</td><td>Last Activity</td>"
-            table+="</tr>"
-
-            def rowIdx = 0
-            devs.each{ device ->
-                def data = safeHistory(device)
-
-                def level = device.currentValue("battery")?.toInteger() ?: 100
-                def drain = getDrain(device)
-                def est = estDays(device)
-                def h = health(device)
-                def lastBatteryStr = formatTimeAgo(getLastBatteryTime(device))
-                def activityDisplay = getActivityDisplay(device)
-                def stale = isStale(device)
-                def color = getBatteryLevelDisplay(level, device)
-
-                def batteryRed = level <= 25
-                def activityRed = isActivityRed(device)
-                def action = batteryRed ? "Replace" : (activityRed ? "Connect" : "")
-
-                def rowBg = (rowIdx % 2 == 0) ? "#f9f9f9" : "#ffffff"
-                rowIdx++
-                table+="<tr style='background-color:${rowBg};'>"
-                table+="<td>${action}</td>"
-                table+="<td>${device.displayName}</td>"
-                table+="<td>${color}</td>"
-                table+="<td>${String.format('%.2f',drain)}</td>"
-                table+="<td>${est}</td>"
-                table+="<td>${h}</td>"
-                table+="<td>${lastBatteryStr}</td>"
-                table+="<td>${activityDisplay}${stale?' ⚠':''}</td>"
-                table+="</tr>"
-            }
-
-            table+="</table>"
-            paragraph table
         }
     }
+}
+
+def buildSummaryTable(devs) {
+    def table="<table style='width:100%; border-collapse: collapse;'>"
+    table+="<tr style='font-weight:bold;'>"
+    table+="<td>Action</td><td>Device</td><td>Battery</td><td>Drain</td><td>Est Days</td><td>Health</td><td>Last Battery</td><td>Last Activity</td>"
+    table+="</tr>"
+
+    def rowIdx = 0
+    devs.each{ device ->
+        safeHistory(device)
+
+        def level = device.currentValue("battery")?.toInteger() ?: 100
+        def drain = getDrain(device)
+        def est = estDays(device)
+        def h = health(device)
+        def lastBatteryStr = formatTimeAgo(getLastBatteryTime(device))
+        def activityDisplay = getActivityDisplay(device)
+        def stale = isStale(device)
+        def color = getBatteryLevelDisplay(level, device)
+
+        def batteryRed = level <= 25
+        def activityRed = isActivityRed(device)
+        def action = batteryRed ? "Replace" : (activityRed ? "Connect" : "")
+
+        def rowBg = (rowIdx % 2 == 0) ? "#f9f9f9" : "#ffffff"
+        rowIdx++
+        table+="<tr style='background-color:${rowBg};'>"
+        table+="<td>${action}</td>"
+        table+="<td>${device.displayName}</td>"
+        table+="<td>${color}</td>"
+        table+="<td>${String.format('%.2f',drain)}</td>"
+        table+="<td>${est}</td>"
+        table+="<td>${h}</td>"
+        table+="<td>${lastBatteryStr}</td>"
+        table+="<td>${activityDisplay}${stale?' ⚠':''}</td>"
+        table+="</tr>"
+    }
+
+    table+="</table>"
+    return table
 }
 // ============================================================
 // ===================== TRENDS PAGE =========================
 // ============================================================
 def trendsPage(){
     dynamicPage(name:"trendsPage", title:"Battery Trends", install:false){
-        section("Battery Trends"){
-            def devs = (autoDevices ?: []).findAll{ it?.currentValue("battery") != null }
+        def devs = (autoDevices ?: []).findAll{ it?.currentValue("battery") != null }
 
-            if(!devs){
-                paragraph "No battery devices found for trends."
-                return
+        if(!devs){
+            section("Battery Trends"){ paragraph "No battery devices found for trends." }
+            return
+        }
+
+        def groups = groupDevicesByHub(devs)
+        groups.each { hubName, hubDevs ->
+            section("Hub: ${hubName}"){
+                paragraph buildTrendsTable(hubDevs)
             }
-
-            // Sort by worst battery first using same color thresholds
-            devs = devs.sort { a, b ->
-                def levelA = a.currentValue("battery")?.toInteger() ?: 100
-                def levelB = b.currentValue("battery")?.toInteger() ?: 100
-
-                // Lower battery first
-                levelA <=> levelB
-            }
-
-            // Start table
-            def table="<table style='width:100%; border-collapse: collapse;'>"
-            table+="<tr style='font-weight:bold;'>"
-            table+="<td>Device</td><td>Battery</td><td>Trend</td><td>Day Drain</td>"
-            table+="</tr>"
-
-            devs.each{ device ->
-                def hist = safeHistory(device)
-                def level = device.currentValue("battery")?.toInteger() ?: 100
-                def drain = hist?.drain ?: 0.3
-                def trend = state.trend[device.id] ?: "Unknown"
-
-                // Use the same color codes as summary notifications
-                def color = getBatteryLevelDisplay(level, device)
-
-                table+="<tr>"
-                table+="<td>${device.displayName}</td>"
-                table+="<td>${color}</td>"
-                table+="<td>${trend}</td>"
-                table+="<td>${String.format('%.2f', drain)}</td>"
-                table+="</tr>"
-            }
-
-            table+="</table>"
-            paragraph table
         }
     }
+}
+
+def buildTrendsTable(devs) {
+    def table="<table style='width:100%; border-collapse: collapse;'>"
+    table+="<tr style='font-weight:bold;'>"
+    table+="<td>Device</td><td>Battery</td><td>Trend</td><td>Day Drain</td>"
+    table+="</tr>"
+
+    devs.each{ device ->
+        def hist = safeHistory(device)
+        def level = device.currentValue("battery")?.toInteger() ?: 100
+        def drain = hist?.drain ?: 0.3
+        def trend = state.trend[device.id] ?: "Unknown"
+        def color = getBatteryLevelDisplay(level, device)
+
+        table+="<tr>"
+        table+="<td>${device.displayName}</td>"
+        table+="<td>${color}</td>"
+        table+="<td>${trend}</td>"
+        table+="<td>${String.format('%.2f', drain)}</td>"
+        table+="</tr>"
+    }
+
+    table+="</table>"
+    return table
 }
 // ============================================================
 // ===================== HISTORY PAGE ========================
