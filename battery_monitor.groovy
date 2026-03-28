@@ -1,6 +1,6 @@
 // ============================================================
 // Battery Monitor 2.0
-// Version 2.3.9
+// Version 2.4.0
 // Author: Jdthomas24
 // Namespace: jdthomas24
 // Description: Advanced Hubitat battery monitoring with analytics, trends and replacement tracking (v2.3.2). Auto-adjusts drain for low-activity devices.
@@ -15,7 +15,7 @@ definition(
     iconUrl: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery.png",
     iconX2Url: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery@2x.png",
     iconX3Url: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery@2x.png",
-    version: "2.3.9",
+    version: "2.4.0",
     importUrl: "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/battery_monitor.groovy"
 )
 def installed() {
@@ -111,10 +111,10 @@ section("Auto Battery Discovery") {
 }
         // ================= HubConnect Hubs =================
         section("Hub Names (optional)") {
-            paragraph "Select your HubConnect Remote Hub devices to display hub names in reports."
-            input "hubConnectors", "capability.*",
-                  title: "HubConnect Remote Hub devices",
-                  multiple: true,
+            paragraph "Enter the app ID of your HubConnect instance to automatically resolve hub names in reports. " +
+                      "Find it in Apps → HubConnect → the number in the browser URL."
+            input "hubConnectAppId", "number",
+                  title: "HubConnect App ID",
                   required: false
         }
 
@@ -422,7 +422,9 @@ def getHubIpForDevice(device) {
 
 def getHubNameForIp(ip) {
     if (!ip) return "Centrala"
-    def hubDev = hubConnectors?.find { it.deviceNetworkId == "hub-${ip}" }
+    if (!hubConnectAppId) return ip
+    def hubConnectApp = location.installedApps?.find { it.id == hubConnectAppId as Long }
+    def hubDev = hubConnectApp?.getChildDevices()?.find { it.deviceNetworkId == "hub-${ip}" }
     return hubDev?.displayName ?: ip
 }
 
