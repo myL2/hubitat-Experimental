@@ -1,6 +1,6 @@
 // ============================================================
 // Battery Monitor 2.0
-// Version 2.5.1
+// Version 2.5.2
 // Author: Jdthomas24
 // Namespace: jdthomas24
 // Description: Advanced Hubitat battery monitoring with analytics, trends and replacement tracking (v2.3.2). Auto-adjusts drain for low-activity devices.
@@ -15,7 +15,7 @@ definition(
     iconUrl: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery.png",
     iconX2Url: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery@2x.png",
     iconX3Url: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery@2x.png",
-    version: "2.5.1",
+    version: "2.5.2",
     importUrl: "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/battery_monitor.groovy",
     oauth: true
 )
@@ -55,6 +55,7 @@ preferences {
     page(name:"manualReplacementPage")
     page(name:"manualReplacementConfirmPage")
     page(name:"infoPage")
+    page(name:"tokenPage")
 }
 
 
@@ -156,11 +157,38 @@ section("Auto Battery Discovery") {
             href "manualReplacementPage", title: "Manual Battery Replacement"
         }
 
+        // ================= API Access =================
+        section("API Access") {
+            href "tokenPage", title: "Generate / View API Token",
+                 description: state.accessToken ? "Token generated — tap to view endpoint URL" : "Tap to generate an access token"
+        }
+
         // ================= Help & Info =================
         section("Help & Info") {
             href "infoPage",
                  title: "Battery Health Guide",
                  description: "Learn what battery drain, health, and trends mean"
+        }
+    }
+}
+
+// ============================================================
+// ===================== TOKEN PAGE ==========================
+// ============================================================
+def tokenPage() {
+    if (!state.accessToken) {
+        try { createAccessToken() } catch (e) { log.error "OAuth not enabled: ${e}" }
+    }
+    dynamicPage(name: "tokenPage", title: "API Access Token", install: false) {
+        if (state.accessToken) {
+            def url = "http://${location.hub.localIP}/apps/api/${app.id}/summary?access_token=${state.accessToken}"
+            section("Endpoint URL") {
+                paragraph "<b>Access Token:</b><br>${state.accessToken}<br><br><b>Summary API URL:</b><br>${url}"
+            }
+        } else {
+            section() {
+                paragraph "⚠ Could not generate token. Make sure OAuth is enabled for this app (gear icon → OAuth)."
+            }
         }
     }
 }
