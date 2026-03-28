@@ -1,0 +1,9 @@
+{
+  "name": "battery-monitor-webapp",
+  "version": "1.0.0",
+  "description": "Hubitat Battery Monitor dashboard",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
