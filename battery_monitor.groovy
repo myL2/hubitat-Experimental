@@ -1,6 +1,6 @@
 // ============================================================
 // Battery Monitor 2.0
-// Version 2.4.2
+// Version 2.4.3
 // Author: Jdthomas24
 // Namespace: jdthomas24
 // Description: Advanced Hubitat battery monitoring with analytics, trends and replacement tracking (v2.3.2). Auto-adjusts drain for low-activity devices.
@@ -15,7 +15,7 @@ definition(
     iconUrl: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery.png",
     iconX2Url: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery@2x.png",
     iconX3Url: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery@2x.png",
-    version: "2.4.2",
+    version: "2.4.3",
     importUrl: "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/battery_monitor.groovy"
 )
 def installed() {
@@ -422,13 +422,14 @@ def getHubIpForDevice(device) {
 
 def getHubNameForIp(ip) {
     if (!ip) return "Centrala"
-    if (!hubConnectAppId) { log.warn "BatteryMonitor: hubConnectAppId not set"; return ip }
-    def hubConnectParent = location.installedApps?.find { it.id == hubConnectAppId as Long }
-    log.debug "BatteryMonitor: hubConnectAppId=${hubConnectAppId}, parent=${hubConnectParent?.label}, childApps=${hubConnectParent?.childApps?.size()}"
+    if (!hubConnectAppId) return ip
+    def allApps = parent?.getChildApps()
+    log.debug "BatteryMonitor: parent=${parent?.class}, allApps=${allApps?.size()}"
+    def hubConnectParent = allApps?.find { it.id == hubConnectAppId as Long }
+    log.debug "BatteryMonitor: hubConnectParent=${hubConnectParent?.label}, childApps=${hubConnectParent?.childApps?.size()}"
     def allDevices = hubConnectParent?.childApps?.collectMany { it.getChildDevices() ?: [] }
-    log.debug "BatteryMonitor: allDevices DNIs=${allDevices?.collect { it.deviceNetworkId }}"
+    log.debug "BatteryMonitor: looking for hub-${ip} among DNIs=${allDevices?.collect { it.deviceNetworkId }}"
     def hubDev = allDevices?.find { it.deviceNetworkId == "hub-${ip}" }
-    log.debug "BatteryMonitor: looking for hub-${ip}, found=${hubDev?.displayName}"
     return hubDev?.displayName ?: ip
 }
 
