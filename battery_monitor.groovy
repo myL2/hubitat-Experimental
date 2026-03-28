@@ -1,6 +1,6 @@
 // ============================================================
 // Battery Monitor 2.0
-// Version 2.4.7
+// Version 2.4.8
 // Author: Jdthomas24
 // Namespace: jdthomas24
 // Description: Advanced Hubitat battery monitoring with analytics, trends and replacement tracking (v2.3.2). Auto-adjusts drain for low-activity devices.
@@ -15,7 +15,7 @@ definition(
     iconUrl: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery.png",
     iconX2Url: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery@2x.png",
     iconX3Url: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery@2x.png",
-    version: "2.4.7",
+    version: "2.4.8",
     importUrl: "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/battery_monitor.groovy"
 )
 def installed() {
@@ -600,8 +600,44 @@ def summaryPage(){
             }
         }
 
+        // Battery estimate based on Replace-action devices
+        def replaceDevs = (autoDevices ?: []).findAll {
+            it?.currentValue("battery") != null &&
+            (it.currentValue("battery")?.toInteger() ?: 100) <= 25
+        }
+        if (replaceDevs) {
+            def batteryMap = [
+                "CR2016": ["CS"],
+                "CR2450": ["LS"],
+                "CR2032": ["MS", "TH", "SW"],
+                "AA":     ["TRV"]
+            ]
+            def counts = [:]
+            replaceDevs.each { device ->
+                def suffix = device.displayName.tokenize().last()?.toUpperCase()
+                batteryMap.each { battType, suffixes ->
+                    if (suffixes.contains(suffix)) {
+                        if (!counts[battType]) counts[battType] = [total: 0, breakdown: [:]]
+                        counts[battType].total++
+                        counts[battType].breakdown[suffix] = (counts[battType].breakdown[suffix] ?: 0) + 1
+                    }
+                }
+            }
+            if (counts) {
+                section("Baterii Necesare") {
+                    def msg = ""
+                    counts.each { battType, data ->
+                        def breakdown = data.breakdown.collect { s, c -> "${s}: ${c}" }.join(", ")
+                        msg += "<b>${battType}</b>: ${data.total} buc. (${breakdown})<br>"
+                    }
+                    paragraph msg
+                }
+            }
+        }
+
         section("Legendă") {
-            paragraph "<b>Sufixe nume dispozitiv:</b> LS = Senzor Scurgere &nbsp;|&nbsp; MS = Senzor Mișcare &nbsp;|&nbsp; TH = Senzor Temperatură &nbsp;|&nbsp; TRV = Ventil Termostat &nbsp;|&nbsp; SW = Buton"
+            paragraph "<b>Sufixe:</b> CS = Senzor de contact &nbsp;|&nbsp; LS = Senzor Scurgere &nbsp;|&nbsp; MS = Senzor Mișcare &nbsp;|&nbsp; TH = Senzor Temperatură &nbsp;|&nbsp; TRV = Ventil Termostat &nbsp;|&nbsp; SW = Buton<br>" +
+                      "<b>Baterii:</b> CR2016 = CS &nbsp;|&nbsp; CR2450 = LS &nbsp;|&nbsp; CR2032 = MS, TH, SW &nbsp;|&nbsp; AA = TRV"
         }
     }
 }
