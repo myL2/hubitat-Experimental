@@ -1,6 +1,6 @@
 // ============================================================
 // Battery Monitor 2.0
-// Version 2.4.5
+// Version 2.4.6
 // Author: Jdthomas24
 // Namespace: jdthomas24
 // Description: Advanced Hubitat battery monitoring with analytics, trends and replacement tracking (v2.3.2). Auto-adjusts drain for low-activity devices.
@@ -15,7 +15,7 @@ definition(
     iconUrl: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery.png",
     iconX2Url: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery@2x.png",
     iconX3Url: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery@2x.png",
-    version: "2.4.5",
+    version: "2.4.6",
     importUrl: "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/battery_monitor.groovy"
 )
 def installed() {
@@ -570,10 +570,27 @@ def summaryPage(){
             return
         }
 
+        section(){
+            input "filterActionOnly", "bool", title: "Show only devices requiring action", defaultValue: true, submitOnChange: true
+        }
+
         def devs = (autoDevices ?: []).findAll{ it?.currentValue("battery") != null }
         if(!devs){
             section("Battery Summary"){ paragraph "No battery devices found." }
             return
+        }
+
+        if(filterActionOnly != false){
+            devs = devs.findAll { device ->
+                def level = device.currentValue("battery")?.toInteger() ?: 100
+                def ts = getLastActivityTime(device)
+                def activityRed = ts ? ((now() - ts) / (1000*60)).toInteger() >= 10080 : true
+                level <= 25 || activityRed
+            }
+            if(!devs){
+                section("Battery Summary"){ paragraph "No devices currently require action." }
+                return
+            }
         }
 
         def groups = groupDevicesByHub(devs)
