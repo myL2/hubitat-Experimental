@@ -413,7 +413,7 @@ def getHubIpForDevice(device) {
 
 def getHubNameForIp(ip) {
     if (!ip) return "Centrala"
-    def hubDev = autoDevices?.find { it.deviceNetworkId == "hub:${ip}" }
+    def hubDev = autoDevices?.find { it.deviceNetworkId == "hub-${ip}" }
     return hubDev?.displayName ?: ip
 }
 
