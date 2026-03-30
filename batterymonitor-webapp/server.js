@@ -122,11 +122,22 @@ const HTML = `<!DOCTYPE html>
 
 <h1>🔋 Battery Monitor</h1>
 <div class="meta" id="meta">Se încarcă…</div>
-<button onclick="load()" style="margin-bottom:16px;padding:6px 14px;font-size:.8rem;cursor:pointer;border:1px solid #ccc;border-radius:6px;background:#fff">Reîmprospătare</button>
+<button onclick="load()" style="margin-bottom:16px;padding:6px 14px;font-size:.8rem;cursor:pointer;border:1px solid #ccc;border-radius:6px;background:#fff">Reîmprospătare</button>
+<button id="toggleBtn" onclick="toggleAll()" style="margin-bottom:16px;margin-left:8px;padding:6px 14px;font-size:.8rem;cursor:pointer;border:1px solid #ccc;border-radius:6px;background:#fff">Arată toate</button>
 
 <div id="content"><div id="spinner">Se încarcă datele…</div></div>
 
 <script>
+let showAll = false;
+let lastData = null;
+
+function toggleAll() {
+  showAll = !showAll;
+  document.getElementById('toggleBtn').textContent =
+    showAll ? 'Arată doar probleme' : 'Arată toate';
+  if (lastData) render(lastData);
+}
+
 function batteryClass(pct) {
   if (pct < 30) return 'bat-red';
   if (pct <= 70) return 'bat-orange';
@@ -207,8 +218,7 @@ function render(data) {
   const hubs = data.hubs || {};
   let html = '';
 
-  // Filter: only devices with action (same as default filter in app)
-  const showAll = false; // change to true to see all devices
+  lastData = data;
 
   for (const [hub, devices] of Object.entries(hubs)) {
     const visible = showAll ? devices : devices.filter(d => d.action);
@@ -223,8 +233,8 @@ function render(data) {
 
   html += \`<div class="legend">
     <b>Sufixe:</b> CS = Senzor de contact | LS = Senzor Scurgere | MS = Senzor Mișcare |
-    TH = Senzor Temperatură | TRV = Ventil Termostat | SW = Buton<br>
-    <b>Baterii:</b> CR2016 = CS | CR2450 = LS | CR2032 = MS, TH, SW | AA = TRV
+    TH = Senzor Temperatură | TRV = Ventil Termostat | SW = Buton | Button = Buton<br>
+    <b>Baterii:</b> CR2016 = CS | CR2450 = LS | CR2032 = MS, TH, SW, Button | AA = TRV
   </div>\`;
 
   document.getElementById('content').innerHTML = html || '<p style="color:#888;padding:20px">Niciun dispozitiv nu necesită acțiune.</p>';

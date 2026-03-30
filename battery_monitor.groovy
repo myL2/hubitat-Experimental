@@ -15,7 +15,7 @@ definition(
     iconUrl: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery.png",
     iconX2Url: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery@2x.png",
     iconX3Url: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery@2x.png",
-    version: "2.5.3",
+    version: "2.5.4",
     importUrl: "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/battery_monitor.groovy",
     oauth: true
 )
@@ -467,7 +467,7 @@ def groupDevicesByHub(devs) {
 }
 
 def getBatteryType(device) {
-    def batteryMap = ["CR2016": ["CS"], "CR2450": ["LS"], "CR2032": ["MS", "TH", "SW"], "AA": ["TRV"]]
+    def batteryMap = ["CR2016": ["CS"], "CR2450": ["LS"], "CR2032": ["MS", "TH", "SW", "BUTTON"], "AA": ["TRV"]]
     def suffix = device.displayName.tokenize().last()?.toUpperCase()
     return batteryMap.find { it.value.contains(suffix) }?.key ?: ""
 }
@@ -672,8 +672,8 @@ def summaryPage(){
         }
 
         section("Legendă") {
-            paragraph "<b>Sufixe:</b> CS = Senzor de contact &nbsp;|&nbsp; LS = Senzor Scurgere &nbsp;|&nbsp; MS = Senzor Mișcare &nbsp;|&nbsp; TH = Senzor Temperatură &nbsp;|&nbsp; TRV = Ventil Termostat &nbsp;|&nbsp; SW = Buton<br>" +
-                      "<b>Baterii:</b> CR2016 = CS &nbsp;|&nbsp; CR2450 = LS &nbsp;|&nbsp; CR2032 = MS, TH, SW &nbsp;|&nbsp; AA = TRV"
+            paragraph "<b>Sufixe:</b> CS = Senzor de contact &nbsp;|&nbsp; LS = Senzor Scurgere &nbsp;|&nbsp; MS = Senzor Mișcare &nbsp;|&nbsp; TH = Senzor Temperatură &nbsp;|&nbsp; TRV = Ventil Termostat &nbsp;|&nbsp; SW = Buton &nbsp;|&nbsp; Button = Buton<br>" +
+                      "<b>Baterii:</b> CR2016 = CS &nbsp;|&nbsp; CR2450 = LS &nbsp;|&nbsp; CR2032 = MS, TH, SW, Button &nbsp;|&nbsp; AA = TRV"
         }
     }
 }
