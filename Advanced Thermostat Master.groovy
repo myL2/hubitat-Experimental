@@ -34,6 +34,7 @@ def installed() {
 
 def updated() {
     unsubscribe()
+    unschedule()
     initialize()
 }
 
@@ -44,6 +45,7 @@ def initialize() {
         subscribe(child.virtualDevice, "thermostatOperatingState", allHandler)
     }
     updateHeatingPlantSwitch()
+    runEvery5Minutes(updateHeatingPlantSwitch)
 }
 
 def allHandler(evt) {

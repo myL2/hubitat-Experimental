@@ -225,6 +225,26 @@
       "oauth": false,
       "primary": false,
       "version": "2.5.3"
+    },
+    {
+      "id": "4d791de6-9f8b-4c67-8094-8252897ad583",
+      "name": "Thermostat Master",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/refs/heads/main/Advanced%20Thermostat%20Master.groovy",
+      "required": false,
+      "oauth": false,
+      "primary": true,
+      "version": "1.0"
+    },
+    {
+      "id": "04cc848a-e954-46de-bc90-edb6ed3e4644",
+      "name": "Thermostat Child",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/refs/heads/main/Advanced%20Thermostat%20Child.groovy",
+      "required": false,
+      "oauth": false,
+      "primary": false,
+      "version": "1.0"
     }
   ],
   "files": []

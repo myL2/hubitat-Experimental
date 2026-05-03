@@ -152,7 +152,7 @@ def updateOperatingState(){
             if (parent.logEnable && currentState != "idle") { log.debug "updateOperatingState of ${virtualDevice}: ${currentState} -> idle" }
         }
     }
-    //parent.updateHeatingPlantSwitch()
+    parent.updateHeatingPlantSwitch()
 }
 
 def updateAppName(def string){
