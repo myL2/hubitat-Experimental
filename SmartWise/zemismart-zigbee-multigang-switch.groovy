@@ -160,7 +160,7 @@ def parse(String description) {
     def now = new Date().getTime()
     Map lastTxMap = stringToJsonMap(state.lastTx)
     if(lastTxMap.waiting){
-        def timeRunning = now.toInteger() - (lastTxMap.pingTime ?: '0').toInteger()
+        Long timeRunning = (now as Long) - ((lastTxMap.pingTime ?: 0L) as Long)
         if (timeRunning < MAX_PING_MILISECONDS) {
             sendRttEvent()
         }
@@ -775,7 +775,7 @@ void sendRttEvent( String value=null) {
     Map lastTxMap = stringToJsonMap(state.lastTx)
     lastTxMap.waiting = false
     state.lastTx = mapToJsonString(lastTxMap)
-    def timeRunning = now.toInteger() - (lastTxMap.pingTime ?: now).toInteger()
+    Long timeRunning = (now as Long) - ((lastTxMap.pingTime ?: now) as Long)
     def descriptionText = "Round-trip time is ${timeRunning} (ms)"
     if (value == null) {
         logInfo "${descriptionText}"

@@ -156,7 +156,7 @@ def parse(String description) {
                     if (it.attrId == "0001") {
                         if (logEnable) log.debug "${device.displayName} Tuya check-in message (attribute ${it.attrId} reported: ${it.value})"
                         def now = new Date().getTime()
-                        def timeRunning = now.toInteger() - (state.pingTime ?: '0').toInteger()
+                        Long timeRunning = (now as Long) - ((state.pingTime ?: 0L) as Long)
                         if (timeRunning < MAX_PING_MILISECONDS) {
                             sendRttEvent()
                         }
@@ -477,7 +477,7 @@ def ping() {
 
 def sendRttEvent() {
     def now = new Date().getTime()
-    def timeRunning = now.toInteger() - (state.pingTime ?: '0').toInteger()
+    Long timeRunning = (now as Long) - ((state.pingTime ?: 0L) as Long)
     def descriptionText = "Round-trip time is ${timeRunning} (ms)"
     logInfo "${descriptionText}"
     sendEvent(name: "rtt", value: timeRunning, descriptionText: descriptionText, unit: "ms", isDigital: true)    

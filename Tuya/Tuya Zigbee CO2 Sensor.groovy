@@ -3,7 +3,7 @@ import hubitat.zigbee.zcl.DataType
 import groovy.transform.CompileStatic
 
 metadata {
-    definition(name: 'Tuya Zigbee CO2 Sensor', namespace: 'myL2', author: 'SebyM', importUrl: '', singleThreaded: true ) {
+    definition(name: 'Tuya Zigbee CO2 Sensor', namespace: 'myL2', author: 'SebyM', importUrl: 'https://raw.githubusercontent.com/myL2/hubitat-Experimental/refs/heads/main/Tuya/Tuya%20Zigbee%20CO2%20Sensor.groovy', singleThreaded: true ) {
         capability 'Refresh'
         capability 'Health Check'
         capability 'CarbonDioxideMeasurement'
@@ -67,7 +67,7 @@ void parse(String description) {
                         if (logEnable) { log.debug "${device.displayName} Tuya check-in message (attribute ${it.attrId} reported: ${it.value})" }
                         Long now = new Date().getTime()
                         if (state.lastTx == null) { state.lastTx = [:] }
-                        int timeRunning = now.toInteger() - (state.lastTx['pingTime'] ?: '0').toInteger()
+                        Long timeRunning = now - ((state.lastTx['pingTime'] ?: 0L) as Long)
                         if (timeRunning < MAX_PING_MILISECONDS) {
                             sendRttEvent()
                         }
@@ -500,7 +500,7 @@ void deviceCommandTimeout() {
 void sendRttEvent(String value=null) {
     Long now = new Date().getTime()
     if (state.lastTx == null) { state.lastTx = [:] }
-    int timeRunning = now.toInteger() - (state.lastTx['pingTime'] ?: now).toInteger()
+    Long timeRunning = now - ((state.lastTx['pingTime'] ?: now) as Long)
     String descriptionText = "Round-trip time is ${timeRunning} ms"
     if (value == null) {
         logInfo "${descriptionText}"

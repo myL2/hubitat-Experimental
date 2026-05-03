@@ -82,7 +82,7 @@
       "namespace": "muxa",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/SmartWise/zemismart-zigbee-multigang-switch.groovy",
       "required": false,
-      "version": "1.1"
+      "version": "1.2"
     },
     {
       "id": "88a58f33-d5e3-49be-b862-421f78d61f8a",
@@ -98,7 +98,7 @@
       "namespace": "kkossev",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/SmartWise/Tuya_Zigbee_Smoke_Detector.groovy",
       "required": false,
-      "version": "1.0"
+      "version": "1.1"
     },
     {
       "id": "401e9904-3f9c-4384-9633-db49883865af",
@@ -122,7 +122,7 @@
       "namespace": "myL2",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/refs/heads/main/Zemismart/ZemiSmart%20Zigbee%20Blind%20Mod2.groovy",
       "required": false,
-      "version": "1.1"
+      "version": "1.2"
     },
     {
       "id": "4d71beaa-ca3a-4c1b-97ed-bf6ba0c8bdae",
@@ -130,7 +130,7 @@
       "namespace": "myL2",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/refs/heads/main/Tuya/Tuya_Zigbee_TRVs_and_Thermostats_Test.groovy",
       "required": false,
-      "version": "1.1"
+      "version": "1.2"
     },
     {
       "id": "2c589b5d-aa30-4cff-a57e-eb363465eb62",
@@ -138,7 +138,7 @@
       "namespace": "myL2",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/refs/heads/main/Tuya/Tuya%20Zigbee%20Power%20Meter.groovy",
       "required": false,
-      "version": "1.1"
+      "version": "1.2"
     },
     {
       "id": "c2b955f0-06c0-4e81-af05-d0a8e42a95eb",
@@ -147,6 +147,22 @@
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/refs/heads/main/Tuya/Tuya%20Zigbee%20Power%20Meter%20Child.groovy",
       "required": false,
       "version": "1.1"
+    },
+    {
+      "id": "a91d8cd7-06a8-4f8a-95b9-2c6d8d90e025",
+      "name": "Tuya Zigbee CO2 Sensor",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/refs/heads/main/Tuya/Tuya%20Zigbee%20CO2%20Sensor.groovy",
+      "required": false,
+      "version": "1.0"
+    },
+    {
+      "id": "b014533f-4b2a-4b55-8353-713df71f78ef",
+      "name": "Tuya Zigbee Metering Plug",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/refs/heads/main/Tuya/Tuya%20Zigbee%20Metering%20Plug.groovy",
+      "required": false,
+      "version": "1.0"
     }
   ],
   "apps": [

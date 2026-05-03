@@ -55,7 +55,7 @@ void parse(String description) {
                         //if (logEnable) { log.debug "${device.displayName} Tuya check-in message (attribute ${it.attrId} reported: ${it.value})" }
                         Long now = new Date().getTime()
                         if (state.lastTx == null) { state.lastTx = [:] }
-                        int timeRunning = now.toInteger() - (state.lastTx['pingTime'] ?: '0').toInteger()
+                        Long timeRunning = now - ((state.lastTx['pingTime'] ?: 0L) as Long)
                         if (timeRunning < MAX_PING_MILISECONDS) {
                             sendRttEvent()
                         }
@@ -454,7 +454,7 @@ void deviceCommandTimeout() {
 void sendRttEvent(String value=null) {
     Long now = new Date().getTime()
     if (state.lastTx == null) { state.lastTx = [:] }
-    int timeRunning = now.toInteger() - (state.lastTx['pingTime'] ?: now).toInteger()
+    Long timeRunning = now - ((state.lastTx['pingTime'] ?: now) as Long)
     String descriptionText = "Round-trip time is ${timeRunning} ms"
     if (value == null) {
         logInfo "${descriptionText}"

@@ -1425,7 +1425,7 @@ void handlePingResponse() { // library marker kkossev.commonLib, line 488
     if (state.lastRx == null) { state.lastRx = [:] } // library marker kkossev.commonLib, line 490
     state.lastRx['checkInTime'] = now // library marker kkossev.commonLib, line 491
 
-    int timeRunning = now.toInteger() - (state.lastTx['pingTime'] ?: '0').toInteger() // library marker kkossev.commonLib, line 493
+    Long timeRunning = now - ((state.lastTx['pingTime'] ?: 0L) as Long) // library marker kkossev.commonLib, line 493
     if (timeRunning > 0 && timeRunning < MAX_PING_MILISECONDS) { // library marker kkossev.commonLib, line 494
         state.stats['pingsOK'] = (state.stats['pingsOK'] ?: 0) + 1 // library marker kkossev.commonLib, line 495
         if (timeRunning < safeToInt((state.stats['pingsMin'] ?: '999'))) { state.stats['pingsMin'] = timeRunning } // library marker kkossev.commonLib, line 496
@@ -1938,7 +1938,7 @@ public void ping() { // library marker kkossev.commonLib, line 993
 private void virtualPong() { // library marker kkossev.commonLib, line 1003
     logDebug 'virtualPing: pong!' // library marker kkossev.commonLib, line 1004
     Long now = new Date().getTime() // library marker kkossev.commonLib, line 1005
-    int timeRunning = now.toInteger() - (state.lastTx['pingTime'] ?: '0').toInteger() // library marker kkossev.commonLib, line 1006
+    Long timeRunning = now - ((state.lastTx['pingTime'] ?: 0L) as Long) // library marker kkossev.commonLib, line 1006
     if (timeRunning > 0 && timeRunning < MAX_PING_MILISECONDS) { // library marker kkossev.commonLib, line 1007
         state.stats['pingsOK'] = (state.stats['pingsOK'] ?: 0) + 1 // library marker kkossev.commonLib, line 1008
         if (timeRunning < safeToInt((state.stats['pingsMin'] ?: '999'))) { state.stats['pingsMin'] = timeRunning } // library marker kkossev.commonLib, line 1009
@@ -1956,7 +1956,7 @@ private void virtualPong() { // library marker kkossev.commonLib, line 1003
 public void sendRttEvent( String value=null) { // library marker kkossev.commonLib, line 1021
     Long now = new Date().getTime() // library marker kkossev.commonLib, line 1022
     if (state.lastTx == null ) { state.lastTx = [:] } // library marker kkossev.commonLib, line 1023
-    int timeRunning = now.toInteger() - (state.lastTx['pingTime'] ?: now).toInteger() // library marker kkossev.commonLib, line 1024
+    Long timeRunning = now - ((state.lastTx['pingTime'] ?: now) as Long) // library marker kkossev.commonLib, line 1024
     String descriptionText = "Round-trip time is ${timeRunning} ms (min=${state.stats['pingsMin']} max=${state.stats['pingsMax']} average=${state.stats['pingsAvg']})" // library marker kkossev.commonLib, line 1025
     if (value == null) { // library marker kkossev.commonLib, line 1026
         logInfo "${descriptionText}" // library marker kkossev.commonLib, line 1027
