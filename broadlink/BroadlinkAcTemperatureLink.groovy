@@ -54,6 +54,11 @@ def mainPage()
         {
             input name: "presenceSensor", type: "capability.motionSensor", title: "Presence sensor (mmwave) - uses 'motion'", required: false, multiple: false
         }
+        section("Open windows / doors")
+        {
+            input name: "contactSensors", type: "capability.contactSensor", title: "Contact sensor(s)", required: false, multiple: true,
+                  description: "any open -> AC off; all closed -> AC back to last state"
+        }
         section("Hub modes")
         {
             input name: "activeModes", type: "mode", title: "Modes in which the AC may run", required: false, multiple: true,
@@ -68,8 +73,10 @@ def mainPage()
             def bits = []
             if(sensors) bits << "source temp: ${currentAverage() ?: 'n/a'}"
             if(presenceSensor) bits << "motion: ${presenceSensor.currentValue('motion') ?: 'n/a'}"
+            if(contactSensors) bits << "contacts: ${anyOpen() ? 'OPEN' : 'all closed'}"
             bits << "hub mode: ${location.mode} (${isActiveMode(location.mode) ? 'active' : 'NOT active'})"
             if(state.away) bits << "currently in away-eco"
+            if(state.contactOff) bits << "off due to open contact"
             paragraph bits.join("\n")
         }
     }
@@ -88,8 +95,10 @@ def initialize()
     if(sensors)        { subscribe(sensors, "temperature", sensorHandler) }
     if(presenceSensor) { subscribe(presenceSensor, "motion", motionHandler) }
     if(activeModes)    { subscribe(location, "mode", modeChangeHandler) }
+    if(contactSensors) { subscribe(contactSensors, "contact", contactHandler) }
 
     state.away = (state.away ?: false)
+    state.contactOff = (state.contactOff ?: false)
     pushTemperature()
 }
 
@@ -159,6 +168,42 @@ def onPresence()
 }
 
 //////////////////////////////////////
+// contact sensors (windows / doors)
+//////////////////////////////////////
+
+private boolean anyOpen() { contactSensors?.any { it.currentValue("contact") == "open" } }
+
+def contactHandler(evt)
+{
+    if(logEnable) log.debug "contact ${evt.displayName} -> ${evt.value}"
+
+    if(anyOpen())
+    {
+        // a window/door is open -> stop the AC (only if we find it on, and remember we did it)
+        if(acDevice?.currentValue("switch") == "on")
+        {
+            if(logEnable) log.debug "contact open -> AC off"
+            state.contactOff = true
+            state.away = false
+            acDevice.off()
+        }
+    }
+    else
+    {
+        // everything closed again -> restore, but only if WE stopped it and the mode is active
+        if(state.contactOff)
+        {
+            state.contactOff = false
+            if(isActiveMode(location.mode))
+            {
+                if(logEnable) log.debug "all contacts closed -> restore AC last state"
+                acDevice?.on()
+            }
+        }
+    }
+}
+
+//////////////////////////////////////
 // hub mode
 //////////////////////////////////////
 
@@ -172,6 +217,7 @@ def modeChangeHandler(evt)
         if(logEnable) log.debug "mode ${m} not in active list -> AC off"
         acDevice?.off()
         state.away = false
+        state.contactOff = false
     }
 }
 
