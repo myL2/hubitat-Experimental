@@ -163,6 +163,22 @@
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/refs/heads/main/Tuya/Tuya%20Zigbee%20Metering%20Plug.groovy",
       "required": false,
       "version": "1.0"
+    },
+    {
+      "id": "bb969831-fdaa-4d42-a755-339574a21dd6",
+      "name": "Broadlink Remote",
+      "namespace": "tomw",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/broadlink/BroadlinkRemote_tomw.groovy",
+      "required": false,
+      "version": "1.0"
+    },
+    {
+      "id": "13ae46c2-5665-46b8-84cc-6e6dc97cf732",
+      "name": "Broadlink AC",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/broadlink/AirConditioner.groovy",
+      "required": false,
+      "version": "1.0"
     }
   ],
   "apps": [
@@ -241,6 +257,16 @@
       "name": "Thermostat Child",
       "namespace": "myL2",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/refs/heads/main/Advanced%20Thermostat%20Child.groovy",
+      "required": false,
+      "oauth": false,
+      "primary": false,
+      "version": "1.0"
+    },
+    {
+      "id": "404d69c9-563e-4797-af61-6b55ab861bac",
+      "name": "Broadlink AC Companion",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/broadlink/BroadlinkAcTemperatureLink.groovy",
       "required": false,
       "oauth": false,
       "primary": false,
