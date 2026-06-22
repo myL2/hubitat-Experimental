@@ -59,6 +59,9 @@ import groovy.transform.Field
         AC24OffA:   [temp: 24, swing: "off", fan: "auto",  eco: false]
     ]
 
+// preset -> Easy Dashboard momentary-button label (subset exposed as child switches)
+@Field static final Map presetButtons = [AC24OnEco: "AC Eco", AC24Off1: "AC Low", AC24OffA: "AC Auto"]
+
 metadata
 {
     definition(name: "Broadlink AC", namespace: "myL2", author: "myL2")
@@ -85,6 +88,9 @@ metadata
         command "setRoomTemperature", [[name: "temp*", type: "NUMBER", description: "actual room temp (feed from a sensor via a rule/app)"]]
         command "awayEco"      // go to AC24OnEco without overwriting the remembered last state
         command "resend"       // re-transmit the current state
+
+        command "createPresetButtons"  // create momentary child switches for Easy Dashboard
+        command "removePresetButtons"
 
         // one-tap comfort presets (send the exact captured code).
         // Named "Ac..." so Hubitat's label humanizer doesn't split "AC" into "A C".
@@ -128,7 +134,7 @@ def initialize()
     }
 
     // advertise supported modes so the Easy Dashboard Thermostat tile appears
-    sendEvent(name: "supportedThermostatModes", value: groovy.json.JsonOutput.toJson(["cool", "heat", "auto", "off"]))
+    sendEvent(name: "supportedThermostatModes", value: groovy.json.JsonOutput.toJson(["cool", "heat", "off"]))
     sendEvent(name: "supportedThermostatFanModes", value: groovy.json.JsonOutput.toJson(["auto", "low", "med", "high", "turbo"]))
 
     reflect()
@@ -206,7 +212,7 @@ def setRoomTemperature(temp)
 {
     if(null == temp) { return }
     state.roomTemp = (temp as BigDecimal)
-    sendEvent(name: "temperature", value: state.roomTemp)
+    reflect()   // refresh temperature + the "current >> target" acState summary
 }
 
 def resend()  { composeAndSend() }
@@ -352,8 +358,12 @@ def reflect()
     sendEvent(name: "eco", value: a.eco ? "on" : "off")
     sendEvent(name: "acFan", value: a.fan)
 
+    // current room temp (sensor / parent) >> target setpoint
+    def curTemp = (state.roomTemp != null) ? state.roomTemp : parent?.currentValue("temperature")
+    def tempStr = (curTemp != null) ? "${curTemp} >> ${a.temp}°C" : "${a.temp}°C"
+
     sendEvent(name: "acState", value: on
-        ? "On - ${a.mode} ${a.temp}°C, fan ${a.fan}, swing ${a.swing ? 'on' : 'off'}${a.eco ? ', Eco' : ''}"
+        ? "On - ${a.mode} ${tempStr}, fan ${a.fan}, swing ${a.swing ? 'on' : 'off'}${a.eco ? ', Eco' : ''}"
         : "Off")
 
     // Thermostat-capability mirror for the Easy Dashboard tile
@@ -364,8 +374,51 @@ def reflect()
     sendEvent(name: "heatingSetpoint", value: a.temp)
     sendEvent(name: "thermostatSetpoint", value: a.temp)
 
-    // temperature shown = real room sensor (via setRoomTemperature) if we have one,
-    // else the parent Broadlink's own sensor, else fall back to the setpoint
-    def rt = (state.roomTemp != null) ? state.roomTemp : parent?.currentValue("temperature")
-    sendEvent(name: "temperature", value: (rt != null) ? rt : a.temp)
+    // temperature shown = real room sensor (via setRoomTemperature) / parent sensor / setpoint
+    sendEvent(name: "temperature", value: (curTemp != null) ? curTemp : a.temp)
+}
+
+//////////////////////////////////////
+// Easy Dashboard preset buttons (momentary child switches)
+//////////////////////////////////////
+
+def createPresetButtons()
+{
+    presetButtons.each { code, label ->
+        def dni = "${device.deviceNetworkId}-btn-${code}"
+        if(!getChildDevice(dni))
+        {
+            addChildDevice("hubitat", "Generic Component Switch", dni,
+                [name: "AC Preset", label: label, isComponent: false])
+            log.info "created preset button: ${label}"
+        }
+    }
+}
+
+def removePresetButtons()
+{
+    getChildDevices()?.findAll { it.deviceNetworkId?.contains("-btn-") }?.each { deleteChildDevice(it.deviceNetworkId) }
+    log.info "removed preset buttons"
+}
+
+// Generic Component Switch callbacks (the child switch calls these on its parent)
+def componentOn(cd)
+{
+    def dni = cd.deviceNetworkId
+    def code = dni.substring(dni.indexOf("-btn-") + 5)
+
+    logDebug("preset button ${code}")
+    preset(code)
+
+    // momentary: light the tapped tile, then clear all after ~2s (visible flash)
+    cd.sendEvent(name: "switch", value: "on")
+    runIn(2, buttonsOff)
+}
+
+def componentOff(cd)     { cd.sendEvent(name: "switch", value: "off") }
+def componentRefresh(cd) { }
+
+def buttonsOff()
+{
+    getChildDevices()?.findAll { it.deviceNetworkId?.contains("-btn-") }?.each { it.sendEvent(name: "switch", value: "off") }
 }
