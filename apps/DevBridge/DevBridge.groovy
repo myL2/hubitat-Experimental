@@ -32,6 +32,7 @@
  *
  *  Changelog:
  *
+ *  v1.1.3 (2026-09-30) - Namespace/name read only from the definition() call, resolving constants (e.g. namespace: sNamespace)
  *  v1.1.2 (2026-09-30) - get_logs folds multi-line messages (e.g. exception details) into their entry
  *  v1.1.1 (2026-09-30) - First release deployed through self_update
  *  v1.1.0 (2026-09-30) - self_update via Guardian child app with health check + rollback; monitor_report and watch tools
@@ -45,7 +46,7 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import groovy.transform.Field
 
-@Field static final String APP_VERSION = "1.1.2"
+@Field static final String APP_VERSION = "1.1.3"
 @Field static final String HUB = "http://127.0.0.1:8080"
 @Field static final List SUPPORTED_PROTOCOLS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"]
 
@@ -440,9 +441,49 @@ private String backupSource(String type, String id, String source) {
 }
 
 private String namespaceOf(String source) {
+    return definitionField(source, "namespace")
+}
+
+// Value of a field inside the definition(...) / library(...) call, following a constant
+// (e.g. namespace: sNamespace) to its String assignment elsewhere in the source.
+private String definitionField(String source, String field) {
+    String blk = definitionBlock(source)
+    if (blk == null) return null
+    def lit = blk =~ /\b${field}\s*:\s*["']([^"']+)["']/
+    if (lit.find()) return lit.group(1)
+    def ref = blk =~ /\b${field}\s*:\s*([A-Za-z_]\w*)/
+    if (ref.find()) {
+        def c = source =~ /\b${ref.group(1)}\s*=\s*["']([^"']+)["']/
+        if (c.find()) return c.group(1)
+    }
+    return null
+}
+
+// Text between the parentheses of the first definition( / library( call, honouring quotes and nesting.
+private String definitionBlock(String source) {
     if (!source) return null
-    def m = source =~ /(?s)(?:definition|library)\s*\(.*?namespace\s*:\s*["']([^"']+)["']/
-    return m.find() ? m.group(1) : null
+    def start = source =~ /(?m)^[ \t]*(?:definition|library)\s*\(/   // line start, so comments mentioning definition( don't match
+    if (!start.find()) return null
+    int i = start.end()
+    int depth = 1
+    String quote = null
+    StringBuilder blk = new StringBuilder()
+    while (i < source.length()) {
+        String c = source.substring(i, i + 1)
+        if (quote != null) {
+            if (c == quote && source.substring(i - 1, i) != "\\") quote = null
+        } else if (c == '"' || c == "'") {
+            quote = c
+        } else if (c == "(") {
+            depth++
+        } else if (c == ")") {
+            depth--
+            if (depth == 0) return blk.toString()
+        }
+        blk.append(c)
+        i++
+    }
+    return null
 }
 
 private List nsAllowList() {
@@ -549,8 +590,7 @@ private void requireNotSelf(String type, String id) {
 }
 
 private String definitionName(String source) {
-    def m = source =~ /(?s)definition\s*\(.*?name\s*:\s*["']([^"']+)["']/
-    return m.find() ? m.group(1) : null
+    return definitionField(source, "name")
 }
 
 // ======================================================================================
