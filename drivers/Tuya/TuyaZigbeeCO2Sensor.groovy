@@ -3,7 +3,7 @@ import hubitat.zigbee.zcl.DataType
 import groovy.transform.CompileStatic
 
 metadata {
-    definition(name: 'Tuya Zigbee CO2 Sensor', namespace: 'myL2', author: 'SebyM', importUrl: 'https://raw.githubusercontent.com/myL2/hubitat-Experimental/refs/heads/main/Tuya/Tuya%20Zigbee%20CO2%20Sensor.groovy', singleThreaded: true ) {
+    definition(name: 'Tuya Zigbee CO2 Sensor', namespace: 'myL2', author: 'SebyM', importUrl: 'https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Tuya/TuyaZigbeeCO2Sensor.groovy', singleThreaded: true ) {
         capability 'Refresh'
         capability 'Health Check'
         capability 'CarbonDioxideMeasurement'

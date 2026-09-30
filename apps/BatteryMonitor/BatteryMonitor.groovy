@@ -1,6 +1,6 @@
 // ============================================================
 // Battery Monitor 2.0
-// Version 2.5.3
+// Version 2.5.5
 // Author: Jdthomas24
 // Namespace: jdthomas24
 // Description: Advanced Hubitat battery monitoring with analytics, trends and replacement tracking (v2.3.2). Auto-adjusts drain for low-activity devices.
@@ -15,8 +15,8 @@ definition(
     iconUrl: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery.png",
     iconX2Url: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery@2x.png",
     iconX3Url: "https://raw.githubusercontent.com/hubitat/HubitatPublic/master/examples/icons/battery@2x.png",
-    version: "2.5.4",
-    importUrl: "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/battery_monitor.groovy",
+    version: "2.5.5",
+    importUrl: "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/apps/BatteryMonitor/BatteryMonitor.groovy",
     oauth: true
 )
 

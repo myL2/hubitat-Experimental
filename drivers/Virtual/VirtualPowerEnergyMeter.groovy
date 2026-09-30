@@ -3,11 +3,13 @@ import groovy.transform.Field
 
 
 metadata {
-	definition (name: "Virtual Energy Meter", namespace: "myL2", author: "SebyM")
+	definition (name: "Virtual Power and Energy Meter", namespace: "myL2", author: "SebyM")
 	{
         capability "EnergyMeter"
+        capability "PowerMeter"
         
         attribute "energy", "number"
+        attribute "power", "number"
         attribute "energyExact", "number"
         attribute "lastPowerUpdate", "number"
         attribute "lastPowerValue", "number"
@@ -16,6 +18,7 @@ metadata {
         command "setEnergy", [[name:"Energy*", type: "NUMBER", description: "Set Fixed Energy Value"]]
         
         command "reset"
+        command "resetEnergy"
     }
 }
 
@@ -40,9 +43,15 @@ def updated() {
 def refresh(){
 }
 
+def resetEnergy(){
+    sendEvent(name: "energy", value: 0)
+    sendEvent(name: "energyExact", value: 0)
+}
+
 def reset(){
     sendEvent(name: "lastPowerValue", value: 0)
     sendEvent(name: "energy", value: 0)
+    sendEvent(name: "power", value: 0)
     sendEvent(name: "energyExact", value: 0)
     sendEvent(name: "lastPowerUpdate", value: now())
 }
@@ -53,6 +62,7 @@ def setEnergy(float energy) {
 }
 
 def updateEnergy(float power) {
+    sendEvent(name: "power", value: power)
     r = (now() - device.currentValue("lastPowerUpdate")) / 1000
     p = device.currentValue("lastPowerValue")
     energy = device.currentValue("energyExact")

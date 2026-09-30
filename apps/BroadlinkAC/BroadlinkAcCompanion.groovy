@@ -28,7 +28,7 @@ definition(
     category: "Convenience",
     iconUrl: "",
     iconX2Url: "",
-    importUrl: "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/broadlink/BroadlinkAcTemperatureLink.groovy"
+    importUrl: "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/apps/BroadlinkAC/BroadlinkAcCompanion.groovy"
 )
 
 preferences

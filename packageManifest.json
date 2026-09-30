@@ -5,162 +5,10 @@
   "dateReleased": "2023-03-20",
   "drivers": [
     {
-      "id": "691bbda1-e5cf-4d77-a82e-660f23390fc2",
-      "name": "Shelly PLUS 2/2.5 as Roller Shutter",
+      "id": "13ae46c2-5665-46b8-84cc-6e6dc97cf732",
+      "name": "Broadlink AC",
       "namespace": "myL2",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Shelly/myL2_Shelly_PLUS_2_as_Roller_Shutter.groovy",
-      "required": false,
-      "version": "1.0"
-    },
-    {
-      "id": "42640f1d-f9a1-4db7-9c76-fba5bca860ef",
-      "name": "Shelly Plus 2nd Gen",
-      "namespace": "myL2",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Shelly/myL2_Shelly_Plus_2nd_Gen.groovy",
-      "required": false,
-      "version": "1.0"
-    },
-    {
-      "id": "2fa81345-ed22-46db-a219-979a6935f795",
-      "name": "Shelly Plus 2nd Gen Child",
-      "namespace": "myL2",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Shelly/myL2_Shelly_Plus_2nd_Gen_Child.groovy",
-      "required": false,
-      "version": "1.0"
-    },
-    {
-      "id": "f912d0d6-d9ba-428a-8b29-41fd02763389",
-      "name": "Zigbee - Xiaomi/Aqara Contact Sensor",
-      "namespace": "oh-lalabs.com",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Xiaomi/zigbee-xiaomi-aqara-contact-sensor-expanded.groovy",
-      "required": false,
-      "version": "1.0.1"
-    },
-    {
-      "id": "96a26724-8762-4115-9604-9f2c39683bd6",
-      "name": "Zigbee - Aqara Water Leak Sensor",
-      "namespace": "oh-lalabs.com",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Xiaomi/zigbee-aqara-water-leak-sensor-expanded.groovy",
-      "required": false,
-      "version": "1.0"
-    },
-    {
-      "id": "69756074-c8b1-4fe0-b29f-1f104b19e291",
-      "name": "Zigbee - Xiaomi/Aqara Motion Sensor",
-      "namespace": "oh-lalabs.com",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Xiaomi/zigbee-xiaomi-aqara-motion-sensor-expanded.groovy",
-      "required": false,
-      "version": "1.0"
-    },
-    {
-      "id": "4bd1ddc8-d7f1-45e4-8c78-e22d5e44dc8e",
-      "name": "Zigbee - Xiaomi/Aqara Temperature & Humidity Sensor",
-      "namespace": "oh-lalabs.com",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Xiaomi/zigbee-xiaomi-aqara-temperature-humidity-expanded.groovy",
-      "required": false,
-      "version": "1.0"
-    },
-    {
-      "id": "8b3cf382-8df7-4d70-b3b3-97424334cb1a",
-      "name": "Zigbee - Xiaomi/Aqara Button",
-      "namespace": "oh-lalabs.com",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Xiaomi/zigbee-xiaomi-aqara-opple-button-switch-remote-expanded.groovy",
-      "required": false,
-      "version": "1.0"
-    },
-    {
-      "id": "96019d7e-00ca-4e92-858b-4cb3be3ff751",
-      "name": "Zigbee - Xiaomi Mijia Light Sensor",
-      "namespace": "oh-lalabs.com",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Xiaomi/zigbee-xiaomi-mijia-smart-light-sensor-expanded.groovy",
-      "required": false,
-      "version": "1.0"
-    },
-    {
-      "id": "b8b5a5d7-cfa5-40af-9198-95ce6dff2d31",
-      "name": "Zemismart ZigBee Wall Switch Multi-Gang",
-      "namespace": "muxa",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/SmartWise/zemismart-zigbee-multigang-switch.groovy",
-      "required": false,
-      "version": "1.2"
-    },
-    {
-      "id": "88a58f33-d5e3-49be-b862-421f78d61f8a",
-      "name": "Notification Proxy Device",
-      "namespace": "RMoRobert",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/NotificationProxy.groovy",
-      "required": false,
-      "version": "1.0"
-    },
-    {
-      "id": "4e55fb6a-8c8c-4f8c-9d4d-885abad05dba",
-      "name": "Tuya Zigbee Smoke Detector",
-      "namespace": "kkossev",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/SmartWise/Tuya_Zigbee_Smoke_Detector.groovy",
-      "required": false,
-      "version": "1.1"
-    },
-    {
-      "id": "401e9904-3f9c-4384-9633-db49883865af",
-      "name": "IMOU Single Button",
-      "namespace": "myL2",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/IMOU/IMOU%20Single%20Button%20ZE1.groovy",
-      "required": false,
-      "version": "1.1"
-    },
-    {
-      "id": "b293ca0a-6fee-4ebe-abe2-69f6254ceb02",
-      "name": "Virtual Contact Sensor with Switch",
-      "namespace": "stephack",
-      "location": "https://raw.githubusercontent.com/stephack/Hubitat/master/drivers/Virtual%20Contact%20Sensor%20with%20Switch.groovy",
-      "required": false,
-      "version": "1.0"
-    },
-    {
-      "id": "b8a4f46c-e023-470c-879d-b2dc3a0791d3",
-      "name": "Zemismart ZigBee Blind Mod2",
-      "namespace": "myL2",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/refs/heads/main/Zemismart/ZemiSmart%20Zigbee%20Blind%20Mod2.groovy",
-      "required": false,
-      "version": "1.2"
-    },
-    {
-      "id": "4d71beaa-ca3a-4c1b-97ed-bf6ba0c8bdae",
-      "name": "Tuya Zigbee TRVs and Thermostats Test",
-      "namespace": "myL2",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/refs/heads/main/Tuya/Tuya_Zigbee_TRVs_and_Thermostats_Test.groovy",
-      "required": false,
-      "version": "1.2"
-    },
-    {
-      "id": "2c589b5d-aa30-4cff-a57e-eb363465eb62",
-      "name": "Tuya Zigbee Power Meter",
-      "namespace": "myL2",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/refs/heads/main/Tuya/Tuya%20Zigbee%20Power%20Meter.groovy",
-      "required": false,
-      "version": "1.2"
-    },
-    {
-      "id": "c2b955f0-06c0-4e81-af05-d0a8e42a95eb",
-      "name": "Tuya Zigbee Power Meter Child",
-      "namespace": "myL2",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/refs/heads/main/Tuya/Tuya%20Zigbee%20Power%20Meter%20Child.groovy",
-      "required": false,
-      "version": "1.1"
-    },
-    {
-      "id": "a91d8cd7-06a8-4f8a-95b9-2c6d8d90e025",
-      "name": "Tuya Zigbee CO2 Sensor",
-      "namespace": "myL2",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/refs/heads/main/Tuya/Tuya%20Zigbee%20CO2%20Sensor.groovy",
-      "required": false,
-      "version": "1.0"
-    },
-    {
-      "id": "b014533f-4b2a-4b55-8353-713df71f78ef",
-      "name": "Tuya Zigbee Metering Plug",
-      "namespace": "myL2",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/refs/heads/main/Tuya/Tuya%20Zigbee%20Metering%20Plug.groovy",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Broadlink/BroadlinkAC.groovy",
       "required": false,
       "version": "1.0"
     },
@@ -168,55 +16,301 @@
       "id": "bb969831-fdaa-4d42-a755-339574a21dd6",
       "name": "Broadlink Remote",
       "namespace": "tomw",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/broadlink/BroadlinkRemote_tomw.groovy",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Broadlink/BroadlinkRemote.groovy",
       "required": false,
       "version": "1.0"
     },
     {
-      "id": "13ae46c2-5665-46b8-84cc-6e6dc97cf732",
-      "name": "Broadlink AC",
+      "id": "401e9904-3f9c-4384-9633-db49883865af",
+      "name": "IMOU Single Button",
       "namespace": "myL2",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/broadlink/AirConditioner.groovy",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/IMOU/IMOUSingleButtonZE1.groovy",
+      "required": false,
+      "version": "1.1"
+    },
+    {
+      "id": "dfb7233a-46e0-4cd1-8213-88ed12b18af2",
+      "name": "IKEA Parasoll Door/Window Sensor (E2013)",
+      "namespace": "dandanache",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Ikea/IkeaParasollDoorWindowSensorE2013.groovy",
       "required": false,
       "version": "1.0"
+    },
+    {
+      "id": "68ad9c03-7656-40e7-b323-a896ee238ff5",
+      "name": "SYMFONISK Sound Controller",
+      "namespace": "cybr",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Ikea/SymfoniskSoundController.groovy",
+      "required": false,
+      "version": "1.0"
+    },
+    {
+      "id": "2df74623-b9a5-4e3a-9efe-031ca7533048",
+      "name": "Matter TempMerature and Humidity Sensor",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Matter/MatterTemperatureHumiditySensor.groovy",
+      "required": false,
+      "version": "1.0"
+    },
+    {
+      "id": "691bbda1-e5cf-4d77-a82e-660f23390fc2",
+      "name": "Shelly PLUS 2/2.5 as Roller Shutter",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Shelly/ShellyPlus2AsRollerShutter.groovy",
+      "required": false,
+      "version": "1.0"
+    },
+    {
+      "id": "42640f1d-f9a1-4db7-9c76-fba5bca860ef",
+      "name": "Shelly Plus 2nd Gen",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Shelly/ShellyPlus2ndGen.groovy",
+      "required": false,
+      "version": "1.0"
+    },
+    {
+      "id": "2fa81345-ed22-46db-a219-979a6935f795",
+      "name": "Shelly Plus 2nd Gen Child",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Shelly/ShellyPlus2ndGenChild.groovy",
+      "required": false,
+      "version": "1.0"
+    },
+    {
+      "id": "9f726e8c-0c5f-42fb-8c5f-574616b02ef1",
+      "name": "Shelly Plus",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Shelly/ShellyPlusQuiet.groovy",
+      "required": false,
+      "version": "1.0"
+    },
+    {
+      "id": "b7ead5c6-0999-4cd4-bd34-b3c2e8e5af3a",
+      "name": "Smartly Inject",
+      "namespace": "oh-lalabs.com",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Smartly/SmartlyInject.groovy",
+      "required": false,
+      "version": "1.0"
+    },
+    {
+      "id": "a91d8cd7-06a8-4f8a-95b9-2c6d8d90e025",
+      "name": "Tuya Zigbee CO2 Sensor",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Tuya/TuyaZigbeeCO2Sensor.groovy",
+      "required": false,
+      "version": "1.0"
+    },
+    {
+      "id": "b014533f-4b2a-4b55-8353-713df71f78ef",
+      "name": "Tuya Zigbee Metering Plug",
+      "namespace": "kkossev",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Tuya/TuyaZigbeeMeteringPlug.groovy",
+      "required": false,
+      "version": "1.0"
+    },
+    {
+      "id": "2c589b5d-aa30-4cff-a57e-eb363465eb62",
+      "name": "Tuya Zigbee Power Meter",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Tuya/TuyaZigbeePowerMeter.groovy",
+      "required": false,
+      "version": "1.2"
+    },
+    {
+      "id": "c2b955f0-06c0-4e81-af05-d0a8e42a95eb",
+      "name": "Tuya Zigbee Power Meter Child",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Tuya/TuyaZigbeePowerMeterChild.groovy",
+      "required": false,
+      "version": "1.1"
+    },
+    {
+      "id": "4e55fb6a-8c8c-4f8c-9d4d-885abad05dba",
+      "name": "Tuya Zigbee Smoke Detector",
+      "namespace": "kkossev",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Tuya/TuyaZigbeeSmokeDetector.groovy",
+      "required": false,
+      "version": "1.1"
+    },
+    {
+      "id": "4d71beaa-ca3a-4c1b-97ed-bf6ba0c8bdae",
+      "name": "Tuya Zigbee TRVs and Thermostats Test",
+      "namespace": "kkossev",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Tuya/TuyaZigbeeTRVsThermostatsTest.groovy",
+      "required": false,
+      "version": "1.2"
+    },
+    {
+      "id": "5459fa16-accc-47a7-9c99-37894524aef9",
+      "name": "Advanced Virtual Thermostat",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Virtual/AdvancedVirtualThermostat.groovy",
+      "required": false,
+      "version": "1.0"
+    },
+    {
+      "id": "5f1c2e3a-9d04-4a7b-8c2e-1b7d6e0a4f21",
+      "name": "Dehumidifier",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Virtual/Dehumidifier.groovy",
+      "required": false,
+      "version": "1.0"
+    },
+    {
+      "id": "88a58f33-d5e3-49be-b862-421f78d61f8a",
+      "name": "Notification Proxy Device",
+      "namespace": "RMoRobert",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Virtual/NotificationProxyDevice.groovy",
+      "required": false,
+      "version": "1.0"
+    },
+    {
+      "id": "b293ca0a-6fee-4ebe-abe2-69f6254ceb02",
+      "name": "Virtual Contact Sensor with Switch",
+      "namespace": "stephack",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Virtual/VirtualContactSensorWithSwitch.groovy",
+      "required": false,
+      "version": "1.0"
+    },
+    {
+      "id": "48a33755-29c2-4039-9c62-47b24d5dd29c",
+      "name": "Virtual Power and Energy Meter",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Virtual/VirtualPowerEnergyMeter.groovy",
+      "required": false,
+      "version": "1.0"
+    },
+    {
+      "id": "96a26724-8762-4115-9604-9f2c39683bd6",
+      "name": "Zigbee - Aqara Water Leak Sensor",
+      "namespace": "oh-lalabs.com",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Xiaomi/AqaraWaterLeakSensor.groovy",
+      "required": false,
+      "version": "1.0"
+    },
+    {
+      "id": "f912d0d6-d9ba-428a-8b29-41fd02763389",
+      "name": "Zigbee - Xiaomi/Aqara Contact Sensor",
+      "namespace": "oh-lalabs.com",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Xiaomi/XiaomiAqaraContactSensor.groovy",
+      "required": false,
+      "version": "1.0.1"
+    },
+    {
+      "id": "69756074-c8b1-4fe0-b29f-1f104b19e291",
+      "name": "Zigbee - Xiaomi/Aqara Motion Sensor",
+      "namespace": "oh-lalabs.com",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Xiaomi/XiaomiAqaraMotionSensor.groovy",
+      "required": false,
+      "version": "1.0"
+    },
+    {
+      "id": "8b3cf382-8df7-4d70-b3b3-97424334cb1a",
+      "name": "Zigbee - Xiaomi/Aqara/Opple Button/Switch/Remote",
+      "namespace": "oh-lalabs.com",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Xiaomi/XiaomiAqaraOppleButton.groovy",
+      "required": false,
+      "version": "1.0"
+    },
+    {
+      "id": "4bd1ddc8-d7f1-45e4-8c78-e22d5e44dc8e",
+      "name": "Zigbee - Xiaomi/Aqara Temperature & Humidity Sensor",
+      "namespace": "oh-lalabs.com",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Xiaomi/XiaomiAqaraTemperatureHumidity.groovy",
+      "required": false,
+      "version": "1.0"
+    },
+    {
+      "id": "96019d7e-00ca-4e92-858b-4cb3be3ff751",
+      "name": "Zigbee - Xiaomi Mijia Smart Light Sensor (Zigbee 3.0)",
+      "namespace": "oh-lalabs.com",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Xiaomi/XiaomiMijiaLightSensor.groovy",
+      "required": false,
+      "version": "1.0"
+    },
+    {
+      "id": "b8b5a5d7-cfa5-40af-9198-95ce6dff2d31",
+      "name": "Zemismart ZigBee Wall Switch Multi-Gang",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Zemismart/ZemismartMultiGangSwitch.groovy",
+      "required": false,
+      "version": "1.2"
+    },
+    {
+      "id": "b8a4f46c-e023-470c-879d-b2dc3a0791d3",
+      "name": "ZemiSmart Zigbee Blind Mod2",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Zemismart/ZemismartZigbeeBlindMod2.groovy",
+      "required": false,
+      "version": "1.2"
     }
   ],
   "apps": [
     {
-      "id": "af8b0624-c1eb-4c6a-82a9-c7b0273116b9",
-      "name": "Shelly Plus 2nd Gen Quick Setup",
+      "id": "04cc848a-e954-46de-bc90-edb6ed3e4644",
+      "name": "Thermostat Child",
       "namespace": "myL2",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Shelly/myL2_Shelly_Plus_2nd_Gen_Quick_Setup.groovy",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/apps/AdvancedThermostat/ThermostatChild.groovy",
       "required": false,
       "oauth": false,
       "primary": false,
       "version": "1.0"
     },
     {
-      "id": "d8b02937-4808-4f4c-add7-c4242f2cd96e",
-      "name": "Shelly Plus 2nd Gen WiFi Config",
+      "id": "4d791de6-9f8b-4c67-8094-8252897ad583",
+      "name": "Thermostat Master",
       "namespace": "myL2",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/Shelly/myL2_Shelly_Plus_2nd_Gen_WiFi_Config.groovy",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/apps/AdvancedThermostat/ThermostatMaster.groovy",
+      "required": false,
+      "oauth": false,
+      "primary": true,
+      "version": "1.0"
+    },
+    {
+      "id": "f509b4e4-8ee9-48f6-87ab-c03f50a98914",
+      "name": "Battery Monitor 2.0",
+      "namespace": "jdthomas24",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/apps/BatteryMonitor/BatteryMonitor.groovy",
+      "required": false,
+      "oauth": true,
+      "primary": false,
+      "version": "2.5.5"
+    },
+    {
+      "id": "404d69c9-563e-4797-af61-6b55ab861bac",
+      "name": "Broadlink AC Companion",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/apps/BroadlinkAC/BroadlinkAcCompanion.groovy",
       "required": false,
       "oauth": false,
       "primary": false,
       "version": "1.0"
     },
     {
-      "id": "3ffd6585-3271-4a4b-8d50-226645569b13",
-      "name": "Notification Proxy",
-      "namespace": "RMoRobert",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/NotificationProxyApp.groovy",
+      "id": "873a38e5-733b-404c-8fa5-759153d00cde",
+      "name": "myL2 Dev Bridge",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/apps/DevBridge/DevBridge.groovy",
+      "required": false,
+      "oauth": true,
+      "primary": true,
+      "version": "1.1.2"
+    },
+    {
+      "id": "82f119b1-05e8-4cd8-ad5b-534f72b54fcd",
+      "name": "myL2 Dev Bridge Guardian",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/apps/DevBridge/DevBridgeGuardian.groovy",
       "required": false,
       "oauth": false,
       "primary": false,
-      "version": "1.0"
+      "version": "1.0.1"
     },
     {
       "id": "1e414e00-1e9f-462e-b0e9-ed0f04d85b48",
       "name": "Edge Mirror",
       "namespace": "myL2",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/myL2_Edge_Mirror.groovy",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/apps/EdgeMirror/EdgeMirror.groovy",
       "required": false,
       "oauth": false,
       "primary": false,
@@ -226,50 +320,60 @@
       "id": "8e54f13b-75f9-4ccd-9cd8-5ba288174aac",
       "name": "Edge Mirror Child",
       "namespace": "myL2",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/myL2_Edge_Mirror_Child.groovy",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/apps/EdgeMirror/EdgeMirrorChild.groovy",
       "required": false,
       "oauth": false,
       "primary": false,
       "version": "1.0"
     },
     {
-      "id": "f509b4e4-8ee9-48f6-87ab-c03f50a98914",
-      "name": "Battery Monitor 2.0",
-      "namespace": "jdthomas24",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/battery_monitor.groovy",
-      "required": false,
-      "oauth": false,
-      "primary": false,
-      "version": "2.5.3"
-    },
-    {
-      "id": "4d791de6-9f8b-4c67-8094-8252897ad583",
-      "name": "Thermostat Master",
+      "id": "1d2f9d0f-7488-4020-9f4b-b1f47ed0adbd",
+      "name": "MQTT to OsmAnd",
       "namespace": "myL2",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/refs/heads/main/Advanced%20Thermostat%20Master.groovy",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/apps/MqttToOsmAnd/MqttToOsmAnd.groovy",
       "required": false,
       "oauth": false,
       "primary": true,
       "version": "1.0"
     },
     {
-      "id": "04cc848a-e954-46de-bc90-edb6ed3e4644",
-      "name": "Thermostat Child",
-      "namespace": "myL2",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/refs/heads/main/Advanced%20Thermostat%20Child.groovy",
+      "id": "3ffd6585-3271-4a4b-8d50-226645569b13",
+      "name": "Notification Proxy",
+      "namespace": "RMoRobert",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/apps/NotificationProxy/NotificationProxy.groovy",
       "required": false,
       "oauth": false,
       "primary": false,
       "version": "1.0"
     },
     {
-      "id": "404d69c9-563e-4797-af61-6b55ab861bac",
-      "name": "Broadlink AC Companion",
+      "id": "af8b0624-c1eb-4c6a-82a9-c7b0273116b9",
+      "name": "Shelly Plus 2nd Gen Quick Setup",
       "namespace": "myL2",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/broadlink/BroadlinkAcTemperatureLink.groovy",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/apps/Shelly/ShellyPlus2ndGenQuickSetup.groovy",
       "required": false,
       "oauth": false,
       "primary": false,
+      "version": "1.0"
+    },
+    {
+      "id": "d8b02937-4808-4f4c-add7-c4242f2cd96e",
+      "name": "Shelly Plus 2nd Gen WiFi Config",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/apps/Shelly/ShellyPlus2ndGenWiFiConfig.groovy",
+      "required": false,
+      "oauth": false,
+      "primary": false,
+      "version": "1.0"
+    },
+    {
+      "id": "a3d8b71c-6e42-4f90-bb15-2c9a0e7d4856",
+      "name": "Smart Dehumidifier Manager",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/apps/SmartDehumidifier/SmartDehumidifierManager.groovy",
+      "required": false,
+      "oauth": false,
+      "primary": true,
       "version": "1.0"
     }
   ],

@@ -60,7 +60,7 @@ import groovy.transform.Field
     ]
 
 // preset -> Easy Dashboard momentary-button label (subset exposed as child switches)
-@Field static final Map presetButtons = [AC24OnEco: "AC Eco", AC24Off1: "AC Low", AC24OffA: "AC Auto"]
+@Field static final Map presetButtons = [AC24OffEco: "AC Eco", AC24Off1: "AC Low", AC23OnA: "AC High"]
 
 metadata
 {

@@ -441,7 +441,7 @@ private boolean logging(message, level) {
         break
         case 100:  
             if (level == 100 ) {
-                log.info "$message"
+                //log.info "$message"
                 didLogging = true
             }
         break

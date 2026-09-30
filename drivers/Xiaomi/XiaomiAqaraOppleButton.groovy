@@ -421,7 +421,7 @@ ArrayList<String> parse(String description) {
         case "0000_FF01":
         case "0000_FF02":
             if(msgMap["encoding"] == "4C") {
-                logging("KNOWN event (Xiaomi/Aqara specific data structure with battery data - 4C) - description:${description} | parseMap:${msgMap}", 100)
+                //logging("KNOWN event (Xiaomi/Aqara specific data structure with battery data - 4C) - description:${description} | parseMap:${msgMap}", 100)
                 parseAndSendBatteryStatus(msgMap['value'][1] / 1000.0)
                 
                 sendZigbeeCommands(zigbee.readAttribute(0x0000, 0x0001))
@@ -431,7 +431,7 @@ ArrayList<String> parse(String description) {
                     msgMap = zigbee.parseDescriptionAsMap(description.replace('encoding: 42', 'encoding: 41'))
                     msgMap["value"] = parseXiaomiStruct(msgMap["value"], isFCC0=false)
                 }
-                logging("KNOWN event (Xiaomi/Aqara specific data structure with battery data - 42) - description:${description} | parseMap:${msgMap}", 100)
+                //logging("KNOWN event (Xiaomi/Aqara specific data structure with battery data - 42) - description:${description} | parseMap:${msgMap}", 100)
                 if(msgMap["value"].containsKey("battery")) {
                     parseAndSendBatteryStatus(msgMap["value"]["battery"] / 1000.0)
                 }
@@ -444,7 +444,7 @@ ArrayList<String> parse(String description) {
         case "FCC0_00F7":
             msgMap["value"] = parseXiaomiStruct(msgMap["value"], isFCC0=true)
             
-            logging("KNOWN event (Xiaomi/Aqara specific data structure with battery data - FCC0-00F7) - description:${description} | parseMap:${msgMap}", 1)
+            //logging("KNOWN event (Xiaomi/Aqara specific data structure with battery data - FCC0-00F7) - description:${description} | parseMap:${msgMap}", 1)
             if(msgMap["value"].containsKey("battery")) {
                 parseAndSendBatteryStatus(msgMap["value"]["battery"] / 1000.0)
             }
@@ -754,16 +754,16 @@ private boolean logging(message, level) {
         switch (logLevelLocal) {
         case 1:  
             if (level >= 1 && level < 99) {
-                log.debug "$message"
+                //log.debug "$message"
                 didLogging = true
             } else if (level == 100) {
-                log.info "$message"
+                //log.info "$message"
                 didLogging = true
             }
         break
         case 100:  
             if (level == 100 ) {
-                log.info "$message"
+                //log.info "$message"
                 didLogging = true
             }
         break
@@ -1338,7 +1338,7 @@ void recoveryEvent(BigDecimal forcedMinutes=null) {
         checkPresence(displayWarnings=false)
         Integer mbe = getMaximumMinutesBetweenEvents(forcedMinutes=forcedMinutes)
         if(hasCorrectCheckinEvents(maximumMinutesBetweenEvents=mbe, displayWarnings=false) == true) {
-            if(presenceWarningEnable == null || presenceWarningEnable == true) log.warn("Event interval normal, recovery mode DEACTIVATED!")
+            //if(presenceWarningEnable == null || presenceWarningEnable == true) log.warn("Event interval normal, recovery mode DEACTIVATED!")
             unschedule('recoveryEvent')
             unschedule('reconnectEvent')
         }
@@ -1426,7 +1426,7 @@ void disableForcedRecoveryMode() {
     state.forcedMinutes = 0
     unschedule('recoveryEvent')
     unschedule('reconnectEvent')
-    if(presenceWarningEnable == null || presenceWarningEnable == true) log.warn("Forced recovery mode DEACTIVATED!")
+    //if(presenceWarningEnable == null || presenceWarningEnable == true) log.warn("Forced recovery mode DEACTIVATED!")
 }
 
 void updateManufacturer(String manfacturer) {
