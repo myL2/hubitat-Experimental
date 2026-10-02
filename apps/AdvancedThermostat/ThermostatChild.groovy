@@ -121,8 +121,7 @@ def updateOperatingState(){
     }
 
     if(anyContactSensorIsOpen){
-        virtualDevice.setThermostatOperatingState("idle")
-        physicalDevice.setHeatingSetpoint(lowMin)
+        applyState("idle", lowMin)
         if (parent.logEnable && currentState != "idle") { log.debug "updateOperatingState of ${virtualDevice}: ${currentState} -> idle (window open)" }
     } else if(evtValue == "heating"){
      	def anyPresenceSensorIsActive = false
@@ -133,26 +132,34 @@ def updateOperatingState(){
             }
         }
         if(anyPresenceSensorIsActive){
-            virtualDevice.setThermostatOperatingState("heating")
-            physicalDevice.setHeatingSetpoint(highMax)
+            applyState("heating", highMax)
             if (parent.logEnable && currentState != "heating") { log.debug "updateOperatingState of ${virtualDevice}: ${currentState} -> heating" }
         }else{
-            virtualDevice.setThermostatOperatingState("idle")
-            physicalDevice.setHeatingSetpoint(lowMin)
+            applyState("idle", lowMin)
             if (parent.logEnable && currentState != "idle") { log.debug "updateOperatingState of ${virtualDevice}: ${currentState} -> restricted idle" }
         }
     } else {
         if(location.mode == "Away" && virtualDevice.currentValue("temperature") < awayTemp){
-            virtualDevice.setThermostatOperatingState("heating")
-            physicalDevice.setHeatingSetpoint(highMax)
+            applyState("heating", highMax)
             if (parent.logEnable && currentState != "heating") { log.debug "updateOperatingState of ${virtualDevice}: ${currentState} -> away heating" }
         }else{
-            virtualDevice.setThermostatOperatingState("idle")
-            physicalDevice.setHeatingSetpoint(lowMin)
+            applyState("idle", lowMin)
             if (parent.logEnable && currentState != "idle") { log.debug "updateOperatingState of ${virtualDevice}: ${currentState} -> idle" }
         }
     }
     parent.updateHeatingPlantSwitch()
+}
+
+// Sends only what changes, so routine valve reports don't re-send the same setpoint
+// (Zigbee traffic, TRV battery) or re-emit the same operating state.
+private void applyState(String operatingState, setpoint) {
+    if (virtualDevice.currentValue("thermostatOperatingState") != operatingState) {
+        virtualDevice.setThermostatOperatingState(operatingState)
+    }
+    def current = physicalDevice.currentValue("heatingSetpoint")
+    if (current == null || (current as BigDecimal).compareTo(setpoint as BigDecimal) != 0) {
+        physicalDevice.setHeatingSetpoint(setpoint)
+    }
 }
 
 def updateAppName(def string){
