@@ -32,6 +32,7 @@
  *
  *  Changelog:
  *
+ *  v1.1.4 (2026-10-02) - read_file / write_file tools for the hub File Manager (e.g. custom driver profiles)
  *  v1.1.3 (2026-09-30) - Namespace/name read only from the definition() call, resolving constants (e.g. namespace: sNamespace)
  *  v1.1.2 (2026-09-30) - get_logs folds multi-line messages (e.g. exception details) into their entry
  *  v1.1.1 (2026-09-30) - First release deployed through self_update
@@ -46,7 +47,7 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import groovy.transform.Field
 
-@Field static final String APP_VERSION = "1.1.3"
+@Field static final String APP_VERSION = "1.1.4"
 @Field static final String HUB = "http://127.0.0.1:8080"
 @Field static final List SUPPORTED_PROTOCOLS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"]
 
@@ -113,6 +114,7 @@ mappings {
     path("/jobs")                 { action: [GET: "restGetJobs"] }
     path("/self")                 { action: [GET: "restSelfStatus", PUT: "restSelfUpdate", POST: "restSelfUpdate"] }
     path("/monitor")              { action: [GET: "restMonitor"] }
+    path("/file/:name")           { action: [GET: "restReadFile", PUT: "restWriteFile", POST: "restWriteFile"] }
 }
 
 def installed() { initialize() }
@@ -201,6 +203,8 @@ private Map callTool(String name, Map args) {
             case "self_update_status": result = selfUpdateStatus(); break
             case "monitor_report":     result = monitorReport(args.refresh == true, args.clear); break
             case "watch":              result = watch(args.action?.toString() ?: "list", args.sourceType?.toString(), args.id?.toString()); break
+            case "read_file":          result = readFile(reqFileName(args.name)); break
+            case "write_file":         result = writeFile(reqFileName(args.name), reqStr(args.content, "content")); break
             case "get_jobs":           result = getJobs(args.sourceType?.toString(), args.id?.toString()); break
             default:
                 return toolError("Unknown tool: ${name}")
@@ -276,6 +280,10 @@ private List toolDefinitions() {
         [name: "watch", description: "Manage the Guardian watch list of apps/devices under development. action: add, remove or list.",
          inputSchema: [type: "object", properties: [action: [type: "string", enum: ["add", "remove", "list"]],
                        sourceType: [type: "string", enum: ["dev", "app"]], id: idProp], required: ["action"]]],
+        [name: "read_file", description: "Read a text file from the hub's File Manager.",
+         inputSchema: [type: "object", properties: [name: [type: "string", description: "File name, e.g. deviceProfilesV4_custom.json"]], required: ["name"]]],
+        [name: "write_file", description: "Create or replace a text file in the hub's File Manager (e.g. a custom driver profile). An existing file is copied to <name>.bak first.",
+         inputSchema: [type: "object", properties: [name: [type: "string"], content: [type: "string"]], required: ["name", "content"]]],
         [name: "get_jobs", description: "Scheduled and running jobs (Logs > Scheduled Jobs). With sourceType+id: only that device's/app's jobs plus its runtime stats (CPU, state size, event counts).",
          inputSchema: [type: "object", properties: [sourceType: [type: "string", enum: ["dev", "app"]], id: idProp]]]
     ]
@@ -316,6 +324,8 @@ def restGetJobs()      { restWrap { getJobs(params.sourceType, params.id) } }
 def restSelfUpdate()   { restWrap { selfUpdate(reqStr(rawBody(), "request body")) } }
 def restSelfStatus()   { restWrap { selfUpdateStatus() } }
 def restMonitor()      { restWrap { monitorReport(params.refresh == "true", params.clear) } }
+def restReadFile()     { restWrap { readFile(reqFileName(params.name)) } }
+def restWriteFile()    { restWrap { writeFile(reqFileName(params.name), reqStr(rawBody(), "request body")) } }
 
 private restWrap(Closure c) {
     try {
@@ -591,6 +601,34 @@ private void requireNotSelf(String type, String id) {
 
 private String definitionName(String source) {
     return definitionField(source, "name")
+}
+
+// ======================================================================================
+//  File Manager
+// ======================================================================================
+
+private Map readFile(String name) {
+    def bytes = downloadHubFile(name)
+    if (bytes == null) throw new IllegalArgumentException("File ${name} not found")
+    return [name: name, size: bytes.length, content: new String(bytes, "UTF-8")]
+}
+
+private Map writeFile(String name, String content) {
+    String backup = null
+    def old = null
+    try { old = downloadHubFile(name) } catch (Exception ignored) { }
+    if (old != null) {
+        backup = "${name}.bak"
+        uploadHubFile(backup, old)
+    }
+    uploadHubFile(name, content.getBytes("UTF-8"))
+    return [success: true, name: name, size: content.length(), backupFile: backup]
+}
+
+private String reqFileName(n) {
+    String s = n?.toString()?.trim()
+    if (!s || !(s ==~ /[A-Za-z0-9._-]{1,100}/)) throw new IllegalArgumentException("name must be a plain file name (letters, digits, . _ -)")
+    return s
 }
 
 // ======================================================================================
