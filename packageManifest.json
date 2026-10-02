@@ -178,7 +178,7 @@
       "namespace": "myL2",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Virtual/VirtualPowerEnergyMeter.groovy",
       "required": false,
-      "version": "1.0"
+      "version": "1.1"
     },
     {
       "id": "96a26724-8762-4115-9604-9f2c39683bd6",
