@@ -347,6 +347,16 @@
       "version": "1.0"
     },
     {
+      "id": "7428cadb-ec32-4754-b752-9c2a27012382",
+      "name": "Scroll Wheel Dimmer",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/apps/ScrollWheelDimmer/ScrollWheelDimmer.groovy",
+      "required": false,
+      "oauth": false,
+      "primary": true,
+      "version": "1.0.1"
+    },
+    {
       "id": "af8b0624-c1eb-4c6a-82a9-c7b0273116b9",
       "name": "Shelly Plus 2nd Gen Quick Setup",
       "namespace": "myL2",
