@@ -9,15 +9,14 @@ import java.text.SimpleDateFormat
 import groovy.transform.CompileStatic
 import java.util.concurrent.ConcurrentHashMap
 
-def version() { "0.6.0" }
+def version() { "0.7.0" }
 
-def timeStamp() { "2024-11-29 22:01:00" }
+def timeStamp() { "2026-09-30 22:00:00" }
 def SimpleDateFormat sdf() {new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")}
 
 @Field static final Boolean debug = false
 @Field static final Integer MAX_PING_MILISECONDS = 10000
 @Field static final Integer presenceCountTreshold = 3
-@Field static final Integer defaultPollingInterval = 3600
 
 metadata {
     definition(name: "Zemismart ZigBee Wall Switch Multi-Gang", namespace: "myL2", author: "SebyM", importUrl: "", singleThreaded: true) {
@@ -28,6 +27,7 @@ metadata {
         capability 'HealthCheck'
         capability "PushableButton"
 
+        fingerprint profileId: "0104", endpointId: "01", inClusters: "0003,0004,0005,0006,0702,0B04,E000,E001,0000", outClusters: "0019,000A", model: "TS0001", manufacturer: "_TZ3000_ctftgjwb", deviceJoinName: "Tuya Zigbee 1 gang relay"
         fingerprint profileId: "0104", endpointId: "01", inClusters: "0003,0004,0005,0006,E000,E001,0000", outClusters: "0019,000A", model: "TS0001", manufacturer: "_TZ3000_npzfdcof", deviceJoinName: "Tuya Zigbee Switch"            // https://www.aliexpress.com/item/1005002852788275.html
         fingerprint profileId: "0104", endpointId: "01", inClusters: "0003,0004,0005,0006,E000,E001,0000", outClusters: "0019,000A", model: "TS0001", manufacturer: "_TZ3000_hktqahrq", deviceJoinName: "Tuya Zigbee Switch"
         fingerprint profileId: "0104", endpointId: "01", inClusters: "0003,0004,0005,0006,E000,E001,0000", outClusters: "0019,000A", model: "TS0001", manufacturer: "_TZ3000_mx3vgyea", deviceJoinName: "Tuya Zigbee Switch"
@@ -141,6 +141,8 @@ metadata {
     preferences {
         input(name: "logEnable", type: "bool", title: "Enable debug logging", defaultValue: false)
         input(name: "txtEnable", type: "bool", title: "Enable description text logging", defaultValue: true)
+        input(name: "healthCheckInterval", type: "enum", title: "Health check: ping the device every", options: ["0": "Off", "15": "15 minutes", "30": "30 minutes", "60": "60 minutes"], defaultValue: "15",
+              description: "healthStatus turns offline after 3 unanswered pings")
     }
 }
 
@@ -514,7 +516,7 @@ def initialize( str ) {
 }
 def initialize() {
     logDebug "Initializing..."
-    runIn( defaultPollingInterval, deviceHealthCheck, [overwrite: true, misfire: 'ignore'])
+    scheduleHealthCheck()
     initializeVars(fullInit = true)
     configure()
     setupChildDevices()
@@ -530,6 +532,7 @@ def installed() {
 def updated() {
     logDebug "Parent updated"
     setLogsOffTask()
+    scheduleHealthCheck()
 }
 
 def tuyaBlackMagic() {
@@ -738,12 +741,25 @@ void logsOff() {
 def setHealthStatusOnline() {
     if (!((device.currentValue('healthStatus') ?: 'unknown') in ['online']))  {
         sendHealthStatusEvent('online')
-        runIn(defaultPollingInterval, deviceHealthCheck, [overwrite: true, misfire: 'ignore'])
+        scheduleHealthCheck()
     }
     state.notPresentCounter = 0
 }
 
+private Integer healthCheckSeconds() {
+    return ((settings?.healthCheckInterval ?: "15") as Integer) * 60
+}
+
+private void scheduleHealthCheck() {
+    if (healthCheckSeconds() > 0) runIn(healthCheckSeconds(), deviceHealthCheck, [overwrite: true, misfire: 'ignore'])
+    else unschedule(deviceHealthCheck)
+}
+
+// Counts checks without any message from the device and pings it; any reply (parse ->
+// setHealthStatusOnline) resets the count. Relays only report on change, so without the
+// ping a healthy but idle device would drift to offline.
 def deviceHealthCheck() {
+    if (healthCheckSeconds() > 0) ping()
     if (state.notPresentCounter != null) {
         state.notPresentCounter = state.notPresentCounter + 1
         if (state.notPresentCounter >= presenceCountTreshold) {
@@ -756,7 +772,7 @@ def deviceHealthCheck() {
     else {
         state.notPresentCounter = 0
     }
-    runIn(defaultPollingInterval, deviceHealthCheck, [overwrite: true, misfire: 'ignore'])
+    scheduleHealthCheck()
 }
 
 void sendHealthStatusEvent(value) {
