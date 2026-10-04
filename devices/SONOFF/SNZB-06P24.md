@@ -1,7 +1,7 @@
 # SONOFF SNZB-06P24 — 24 GHz mmWave presence sensor (Zigbee)
 
 Findings from setting up and probing one unit on Hubitat (C-8 Pro, platform 2.5.2) on 2026-10-02.
-Hubitat device: **253 "Bedroom HPR"** (was "Living HPR").
+Hubitat devices: **155 "Bedroom HPR"**, **145 "Kitchen HPR"** and **50 "Living HPR"** (all firmware 1.0.4). Each was paired as a new device (253, 255, 257), set up, then moved onto the existing device with Hubitat *Swap Devices* so rules and dashboards kept working.
 
 ## Device
 
@@ -26,12 +26,17 @@ kkossev **"Tuya Zigbee mmWave Sensor"** (namespace `kkossev`) **v4.2.5** or newe
 see it as UNKNOWN.
 
 Setup that works:
-1. Change the device type to *Tuya Zigbee mmWave Sensor*.
+1. With the myL2 fingerprint patch (below) the hub picks *Tuya Zigbee mmWave Sensor* at pairing; otherwise change the
+   device type by hand. The automatic Configure at pairing runs before the profile is detected and binds nothing.
 2. Run **Load Standard Profiles From GitHub**, then **Configure** — the first Configure must run *after* the
    profile is loaded, otherwise nothing is bound ("no configureReporting section in the UNKNOWN profile").
 3. Run **spatial learning** with the room empty (see below).
 
 Local myL2 patch of that driver (on the hub only, overwritten by an upstream update):
+- Static `fingerprint` for `SONOFF` / `SNZB-06P24`: upstream only emits fingerprints from `g_deviceFingerprintsV4`,
+  which is filled at runtime, so the hub never auto-selected the driver at pairing (the device joined as generic *Device*).
+- `setZones` command: the enabled zones as digits (`12345` = zones 1–5, up to 3 m), a list (`1,2,5`), `all` or `none`;
+  converts to the `0x2016` bitmap through the driver's existing `setAllZones`.
 - `startSpatialLearning` command button with `_status_` messages: 🚶 leave the room → ⏳ running (~35 s) → ✅ done / ❌ failed / ⌛ timed out.
 - "skipped illuminance … less than delta" moved from debug to trace logging.
 - Diagnostic commands `discoverAttributes(cluster, mfgCode)` and `readAttributes(cluster, attrs, mfgCode)`
@@ -103,7 +108,7 @@ Network-robustness settings for Amazon hubs; leave alone on Hubitat. Values (unc
 
 ## Settings in use
 
-Fading time 30 s, sensitivity 0, illuminance offset 0, all zones enabled, illuminance reporting min 10 s /
+Fading time 30 s, sensitivity 0, illuminance offset 0, zones: Bedroom and Living all (255), Kitchen 1–5 (63, up to 3 m), illuminance reporting min 10 s /
 change 5 lx, health check every 60 min.
 
 ## Sources
