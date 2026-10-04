@@ -32,6 +32,7 @@
  *
  *  Changelog:
  *
+ *  v1.1.5 (2026-10-02) - Hub 4xx (e.g. deleted device id) answered as not found, without an error log entry
  *  v1.1.4 (2026-10-02) - read_file / write_file tools for the hub File Manager (e.g. custom driver profiles)
  *  v1.1.3 (2026-09-30) - Namespace/name read only from the definition() call, resolving constants (e.g. namespace: sNamespace)
  *  v1.1.2 (2026-09-30) - get_logs folds multi-line messages (e.g. exception details) into their entry
@@ -47,7 +48,7 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import groovy.transform.Field
 
-@Field static final String APP_VERSION = "1.1.4"
+@Field static final String APP_VERSION = "1.1.5"
 @Field static final String HUB = "http://127.0.0.1:8080"
 @Field static final List SUPPORTED_PROTOCOLS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"]
 
@@ -212,6 +213,11 @@ private Map callTool(String name, Map args) {
     } catch (IllegalArgumentException e) {
         return toolError(e.message)
     } catch (Exception e) {
+        Integer hubStatus = hubClientError(e)
+        if (hubStatus) {
+            logDebug "tool ${name}: hub answered HTTP ${hubStatus}"
+            return toolError("Not found on the hub (HTTP ${hubStatus}) - check the id")
+        }
         log.error "Dev Bridge tool ${name} failed: ${e}"
         return toolError("${e.class.simpleName}: ${e.message}")
     }
@@ -334,9 +340,21 @@ private restWrap(Closure c) {
     } catch (IllegalArgumentException e) {
         return renderJson([success: false, error: e.message], 400)
     } catch (Exception e) {
+        Integer hubStatus = hubClientError(e)
+        if (hubStatus) {
+            logDebug "REST ${request?.requestURI}: hub answered HTTP ${hubStatus}"
+            return renderJson([success: false, error: "Not found on the hub (HTTP ${hubStatus}) - check the id"], hubStatus)
+        }
         log.error "Dev Bridge REST failed: ${e}"
         return renderJson([success: false, error: "${e.class.simpleName}: ${e.message}"], 500)
     }
+}
+
+// HTTP 4xx from a hub endpoint (e.g. 404 for a deleted device) is a bad id from the caller,
+// not a Bridge failure: answer it without an error log entry. Returns null for anything else.
+private Integer hubClientError(Exception e) {
+    def m = (e.message ?: "") =~ /status code: (4\d\d)/
+    return m.find() ? (m.group(1) as Integer) : null
 }
 
 private String rawBody() {
