@@ -171,3 +171,12 @@ def getMasterId(){
     master.getId()
 }
 
+// Used by Thermostat Master (same interface as Thermostat Child Relay)
+String getOperatingState() {
+    return virtualDevice.currentValue("thermostatOperatingState")
+}
+
+def getThermostatDevice() {
+    return virtualDevice
+}
+

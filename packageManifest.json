@@ -270,7 +270,7 @@
       "required": false,
       "oauth": false,
       "primary": false,
-      "version": "1.1"
+      "version": "1.2"
     },
     {
       "id": "4d791de6-9f8b-4c67-8094-8252897ad583",
@@ -280,7 +280,17 @@
       "required": false,
       "oauth": false,
       "primary": true,
-      "version": "1.1"
+      "version": "1.2"
+    },
+    {
+      "id": "4833fcc1-53cf-4068-9d52-63d027b345b2",
+      "name": "Thermostat Child Relay",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/apps/AdvancedThermostat/ThermostatChildRelay.groovy",
+      "required": false,
+      "oauth": false,
+      "primary": false,
+      "version": "1.0"
     },
     {
       "id": "f509b4e4-8ee9-48f6-87ab-c03f50a98914",

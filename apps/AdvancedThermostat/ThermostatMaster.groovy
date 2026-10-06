@@ -23,7 +23,8 @@ def mainPage(){
             input "heatingPlantHealth", "capability.healthCheck", title: "Heating plant relay (optional): warn when its healthStatus goes offline", required: false
         }
         section ("Thermostats"){
-            app(name: "childApps1", appName: "Thermostat Child", namespace: "myL2", title: "Add new Thermostat Child", submitOnChange: true, multiple: true)
+            app(name: "childApps1", appName: "Thermostat Child", namespace: "myL2", title: "Add new TRV Thermostat (virtual thermostat + TRV)", submitOnChange: true, multiple: true)
+            app(name: "childApps2", appName: "Thermostat Child Relay", namespace: "myL2", title: "Add new Relay Thermostat (thermostat + on/off relay)", submitOnChange: true, multiple: true)
         }
         section("Other Settings") {
         	input name: "logEnable", type: "bool", title: "Enable debug logging"
@@ -47,7 +48,7 @@ def initialize() {
     log.debug "updated with  ${childApps.size()} valid device pairs"
     childApps.each {child ->
         log.debug "child app: ${child.label}"
-        subscribe(child.virtualDevice, "thermostatOperatingState", allHandler)
+        subscribe(child.getThermostatDevice(), "thermostatOperatingState", allHandler)
     }
     if (heatingPlantHealth) subscribe(heatingPlantHealth, "healthStatus", plantHealthHandler)
     updateHeatingPlantSwitch()
@@ -75,9 +76,10 @@ def updateHeatingPlantSwitch(){
     def requestingAreas = []
     def anyHeating = false
         childApps.each {child ->
-            def operatingState = child.virtualDevice.currentValue("thermostatOperatingState")
-            if (operatingState == "heating") { 
-                requestingAreas << [child.virtualDevice]
+            // TRV and Relay children both expose getOperatingState() / getThermostatDevice()
+            def operatingState = child.getOperatingState()
+            if (operatingState == "heating") {
+                requestingAreas << [child.getThermostatDevice()]
                 anyHeating = true 
             }
         }
