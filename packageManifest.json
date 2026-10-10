@@ -181,6 +181,14 @@
       "version": "1.0.0"
     },
     {
+      "id": "24fed397-19db-4559-881f-bf7fbdee9a7f",
+      "name": "Tuya Zigbee Soil Sensor",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Tuya/TuyaZigbeeSoilSensor.groovy",
+      "required": false,
+      "version": "1.0.0"
+    },
+    {
       "id": "5459fa16-accc-47a7-9c99-37894524aef9",
       "name": "Advanced Virtual Thermostat",
       "namespace": "myL2",
