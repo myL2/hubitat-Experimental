@@ -117,6 +117,14 @@
       "version": "1.0.0"
     },
     {
+      "id": "93f5150c-54e5-48b9-b8f4-d1576931772c",
+      "name": "SONOFF Zigbee Presence Sensor",
+      "namespace": "myL2",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/SONOFF/SonoffZigbeePresenceSensor.groovy",
+      "required": false,
+      "version": "1.0.0"
+    },
+    {
       "id": "a91d8cd7-06a8-4f8a-95b9-2c6d8d90e025",
       "name": "Tuya Zigbee CO2 Sensor",
       "namespace": "myL2",

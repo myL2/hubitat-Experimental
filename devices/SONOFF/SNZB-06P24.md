@@ -21,7 +21,12 @@ Button: short press = check connection, 5 s = pairing mode, 10 s = factory reset
 
 ## Driver
 
-kkossev **"Tuya Zigbee mmWave Sensor"** (namespace `kkossev`) **v4.2.5** or newer, with standard profile file
+Dedicated myL2 **"SONOFF Zigbee Presence Sensor"** (`drivers/SONOFF/SonoffZigbeePresenceSensor.groovy`, since
+2026-10-10): presence, illuminance (lux, with a lux change threshold), fading time, radar sensitivity, zones
+(`setZones 12345`), illuminance offset, spatial learning with `_status_`, motion ignored during learning.
+Note: after a rejoin (e.g. a hub update) the sensor came back with factory settings (fading time 120 s).
+
+Previously: kkossev **"Tuya Zigbee mmWave Sensor"** (namespace `kkossev`) **v4.2.5** or newer, with standard profile file
 `deviceProfilesV4_mmWave.json` **v4.1.6+** (profile `SONOFF_SNZB-06P24_RADAR`). Older driver/profile versions
 see it as UNKNOWN.
 
