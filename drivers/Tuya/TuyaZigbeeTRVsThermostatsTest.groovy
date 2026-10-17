@@ -841,7 +841,7 @@ void customProcessDeviceProfileEvent(final Map descMap, final String name, final
             sendEvent(eventMap)
             logInfo "${descText}"
             if (valueScaled == 'on') {  // should be initialized with 'unknown' value
-                String lastThermostatMode = state.lastThermostatMode
+                String lastThermostatMode = (state.lastThermostatMode in [null, 'unknown']) ? 'heat' : state.lastThermostatMode   // myL2: was 'unknown' until a mode was set
                 sendEvent(name: 'thermostatMode', value: lastThermostatMode, isStateChange: true, description: 'TRV systemMode is on', type: 'digital')
             }
             else {
@@ -4797,6 +4797,14 @@ public void setThermostatMode(final String requestedMode) { // library marker kk
                 logDebug 'setThermostatMode: pre-processing: switching first the systemMode on' // library marker kkossev.thermostatLib, line 232
                 sendAttribute('systemMode', 'on') // library marker kkossev.thermostatLib, line 233
             } // library marker kkossev.thermostatLib, line 234
+            // myL2: no thermostatMode dp (e.g. Avatto ZWT198): systemMode on/off is the device's only mode, so remember heat/auto here
+            if (nativelySupportedModesList.isEmpty() && ('on' in systemModesList)) {
+                state.lastThermostatMode = mode
+                if (device.currentValue('systemMode') == 'on') {
+                    sendEvent(name: 'thermostatMode', value: mode, isStateChange: true, description: 'systemMode is on', type: 'digital')
+                }
+                return
+            }
             break // library marker kkossev.thermostatLib, line 235
         case 'cool':        // TODO !!!!!!!!!! // library marker kkossev.thermostatLib, line 236
             if (!('cool' in DEVICE.supportedThermostatModes)) { // library marker kkossev.thermostatLib, line 237
