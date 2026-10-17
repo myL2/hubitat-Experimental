@@ -180,3 +180,7 @@ def getThermostatDevice() {
     return virtualDevice
 }
 
+// TRV zones have no distributor pump; the Master asks every child.
+def getPump() {
+    return null
+}

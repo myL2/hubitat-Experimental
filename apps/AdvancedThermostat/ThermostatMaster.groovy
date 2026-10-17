@@ -29,6 +29,7 @@ def mainPage(){
         section("Other Settings") {
         	input name: "logEnable", type: "bool", title: "Enable debug logging"
             input name: "contactDelay", type: "number", title: "Delay in seconds to process windows opened/closed", defaultValue: 10
+            input name: "pumpDelay", type: "number", title: "Pump delay in seconds: start a distributor pump this long after its first valve opens, and keep it running this long after its last valve closes", defaultValue: 60
     	}
     }
 }
@@ -75,23 +76,83 @@ def allHandler(evt) {
 def updateHeatingPlantSwitch(){
     def requestingAreas = []
     def anyHeating = false
-        childApps.each {child ->
-            // TRV and Relay children both expose getOperatingState() / getThermostatDevice()
-            def operatingState = child.getOperatingState()
-            if (operatingState == "heating") {
-                requestingAreas << [child.getThermostatDevice()]
-                anyHeating = true 
-            }
+    Map pumpDevices = [:]
+    Map pumpDemand = [:]
+    childApps.each {child ->
+        // TRV and Relay children both expose getOperatingState() / getThermostatDevice() / getPump()
+        def operatingState = child.getOperatingState()
+        def pump = null
+        try { pump = child.getPump() } catch (MissingMethodException e) { }   // child code older than the pump option
+        if (pump) {
+            String pumpId = pump.id as String
+            pumpDevices[pumpId] = pump
+            pumpDemand[pumpId] = pumpDemand[pumpId] || operatingState == "heating"
         }
-        // Only command the plant when its reported state differs; the 5-minute schedule
-        // still corrects it if a command was missed.
-        String wanted = anyHeating ? "on" : "off"
-        state.plantWanted = wanted
-        if (heatingPlant.currentValue("switch") == wanted) return
-        if (logEnable) { log.debug "heatingPlant -> ${wanted.toUpperCase()}${anyHeating ? " (${requestingAreas})" : ''}" }
-        sendPlantCommand(wanted)
-        state.plantAttempts = 1
-        runIn(PLANT_VERIFY_DELAY, "verifyHeatingPlant")
+        if (operatingState == "heating") {
+            requestingAreas << [child.getThermostatDevice()]
+            // Zones with a pump call the plant through their pump, once it runs.
+            if (!pump) anyHeating = true
+        }
+    }
+    if (updatePumps(pumpDevices, pumpDemand)) anyHeating = true
+    // Only command the plant when its reported state differs; the 5-minute schedule
+    // still corrects it if a command was missed.
+    String wanted = anyHeating ? "on" : "off"
+    state.plantWanted = wanted
+    if (heatingPlant.currentValue("switch") == wanted) return
+    if (logEnable) { log.debug "heatingPlant -> ${wanted.toUpperCase()}${anyHeating ? " (${requestingAreas})" : ''}" }
+    sendPlantCommand(wanted)
+    state.plantAttempts = 1
+    runIn(PLANT_VERIFY_DELAY, "verifyHeatingPlant")
+}
+
+// A pump starts pumpDelay after its first zone calls (valves take time to open) and stops
+// pumpDelay after its last zone stops. Returns true when any pump should be running.
+private boolean updatePumps(Map pumpDevices, Map pumpDemand) {
+    long delayMs = ((pumpDelay != null ? pumpDelay : 60) as Long) * 1000L
+    long nowMs = now()
+    // atomicState: children call in from their own executions, and plain state writes were lost between them.
+    Map oldPumps = atomicState.pumps ?: [:]
+    Map pumps = [:]
+    boolean anyOn = false
+    Long nextCheckMs = null
+    for (entry in pumpDevices) {
+        String pumpId = entry.key
+        def pump = entry.value
+        Map old = oldPumps[pumpId]
+        // A pump seen for the first time keeps running if it already runs, rather than stopping for the delay.
+        boolean wasOn = old != null ? (old.on ?: false) : pump.currentValue("switch") == "on"
+        old = old ?: [:]
+        Long since = old.since as Long
+        Long idleSince = old.idleSince as Long
+        boolean on
+        if (pumpDemand[pumpId]) {
+            since = since ?: nowMs
+            idleSince = null
+            on = wasOn || nowMs - since >= delayMs
+            if (!on) nextCheckMs = Math.min(nextCheckMs ?: Long.MAX_VALUE, since + delayMs - nowMs)
+        } else {
+            since = null
+            idleSince = wasOn ? (idleSince ?: nowMs) : null
+            on = wasOn && nowMs - idleSince < delayMs
+            if (on) nextCheckMs = Math.min(nextCheckMs ?: Long.MAX_VALUE, idleSince + delayMs - nowMs)
+            else idleSince = null
+        }
+        pumps[pumpId] = [on: on, since: since, idleSince: idleSince]
+        if (on) anyOn = true
+        String wanted = on ? "on" : "off"
+        if (pump.currentValue("switch") != wanted) {
+            if (logEnable) { log.debug "pump ${pump} -> ${wanted.toUpperCase()}" }
+            if (on) pump.on() else pump.off()
+        }
+    }
+    atomicState.pumps = pumps
+    if (nextCheckMs != null) runIn(Math.max(1L, (long) Math.ceil(nextCheckMs / 1000.0d)) as Integer, "pumpTimer", [overwrite: true])
+    return anyOn
+}
+
+def pumpTimer() {
+    updateHeatingPlantSwitch()
 }
 
 // Like Reliable Locks: check the plant reported the commanded state; if not, refresh
