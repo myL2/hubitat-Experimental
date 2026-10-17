@@ -25,6 +25,9 @@
  *
  *  Changelog:
  *
+ *  v1.1.0 (2026-10-17) - Soil moisture smoothing (2-minute average, changes of 2+); scheduled soil moisture reports;
+ *                        time to dry (dryingRate, hoursToDry, estimatedDryAt, "Dry at" preference); ZG-303Z humidity
+ *                        cluster = soil moisture; preferences synced from the sensor; Tuya heartbeat handled quietly
  *  v1.0.0 (2026-10-10) - First release: HOBEIAN ZG-303Z and Tuya TS0601 soil sensors
  *
  */
@@ -32,9 +35,19 @@
 import groovy.transform.Field
 import hubitat.zigbee.zcl.DataType
 
-@Field static final String DRIVER_VERSION = "1.0.0"
+@Field static final String DRIVER_VERSION = "1.1.0"
 @Field static final int QUEUE_MAX = 200
 @Field static final long PENDING_RETRY_MS = 30000     // resend queued settings at most this often
+@Field static final long SMOOTHING_WINDOW_MS = 120000  // soil moisture: average of the readings of the last 2 min
+@Field static final int SMOOTHING_MIN_CHANGE = 2       // ... reported when it moves at least this much
+@Field static final Map REPORT_INTERVALS = ["0": "None", "30": "30 minutes", "60": "1 hour", "180": "3 hours", "360": "6 hours"]
+// Time to dry: trend of the reported soil moisture over the last 48 h (or since watering)
+@Field static final long DRY_TREND_MS = 48 * 3600000L
+@Field static final long DRY_MIN_SPAN_MS = 12 * 3600000L      // 2-point steps: a slow dry-down needs ~12 h to show a trend
+@Field static final long DRY_KEEP_MS = 4 * 24 * 3600000L
+@Field static final int DRY_KEEP_POINTS = 300
+@Field static final int WATERING_RISE = 10              // a rise of this much starts a new dry-down
+@Field static final BigDecimal DRY_MIN_RATE = 0.5       // %/day; slower than this = not drying
 
 // Tuya DP types
 @Field static final int DP_RAW = 0x00
@@ -78,6 +91,9 @@ metadata {
 
         attribute "soilMoisture", "number"
         attribute "soilDry", "enum", ["false", "true"]
+        attribute "dryingRate", "number"
+        attribute "hoursToDry", "number"
+        attribute "estimatedDryAt", "string"
         attribute "batteryVoltage", "number"
         attribute "batteryState", "enum", ["low", "middle", "high"]
         attribute "temperatureUnit", "enum", ["celsius", "fahrenheit"]
@@ -107,6 +123,9 @@ metadata {
         input name: "humidityCalibrationPref", type: "number", title: "Humidity calibration (%)", description: "-30 - 30 %", range: "-30..30"
         }
         input name: "temperatureUnitPref", type: "enum", title: "Temperature unit on the sensor", options: ["celsius", "fahrenheit"]
+        input name: "soilSmoothing", type: "bool", title: "Smooth soil moisture", description: "Report the average of the last 2 minutes of readings, only on changes of 2 % or more (stops the flicker during measurement bursts)", defaultValue: true
+        input name: "dryThreshold", type: "number", title: "Dry at (%)", description: "Soil moisture counted as dry for the time-to-dry estimate (hoursToDry, estimatedDryAt)", defaultValue: 30, range: "0..100"
+        input name: "reportInterval", type: "enum", title: "Report soil moisture on a schedule", description: "Also send the current soil moisture at this interval, even when unchanged (regular points for graphs)", options: REPORT_INTERVALS, defaultValue: "0"
         input name: "offlineHours", type: "number", title: "Offline after (hours)", description: "healthStatus goes offline after this long without any message", defaultValue: 2, range: "1..48"
         input name: "txtEnable", type: "bool", title: "Enable descriptionText logging", defaultValue: true
         input name: "logEnable", type: "bool", title: "Enable debug logging", defaultValue: false
@@ -131,7 +150,9 @@ def updated() {
     log.info "${device.displayName} updated (v${DRIVER_VERSION})"
     unschedule()
     runEvery1Hour("healthCheck")
+    scheduleReport()
     if (logEnable) runIn(1800, "logsOff")
+    updateDryEstimate()
     Map pending = [:]
     SETTINGS.each { String key, Map s ->
         if (isTs0601() && key != "temperatureUnit") return     // the TS0601 only has the temperature unit
@@ -156,6 +177,7 @@ def configure() {
     log.info "${device.displayName} configure"
     unschedule()                                 // also clears jobs left by a previous driver (e.g. after Swap Devices)
     runEvery1Hour("healthCheck")
+    scheduleReport()
     if (logEnable) runIn(1800, "logsOff")
     String dni = device.deviceNetworkId
     List<String> cmds = []
@@ -369,7 +391,7 @@ private void sendTimeSync(String seq) {
 
 private void handleDp(int dp, int type, long v, String hex) {
     switch (dp) {
-        case 3:   sendEventLog("soilMoisture", v, "%"); return
+        case 3:   soilReading(v as int); return
         case 5:   sendTemperature(isTs0601() ? (v as BigDecimal) : v / 10.0); return
         case 14:
             if (isTs0601()) { sendEventLog("batteryState", ["low", "middle", "high"][v as int] ?: v.toString(), null); return }
@@ -392,6 +414,139 @@ private void handleDp(int dp, int type, long v, String hex) {
         case 110: settingEvent("soilWarning", v, "%"); return
     }
     logInfoUnknown("DP ${dp}", "type 0x${hex2(type)} value ${type in [DP_RAW, DP_STRING] ? hex : v}")
+}
+
+// Soil moisture readings come in bursts that scatter by several points (the QT-07S flips between
+// two values 6-7 apart for minutes): report the average of a 2-minute window, on changes of 2+.
+private void soilReading(int v) {
+    state.lastSoilReading = v
+    if (soilSmoothing == false) { sendEventLog("soilMoisture", v, "%"); recordDryPoint(v); return }
+    long t = now()
+    List<List> win = ((state.soilWindow ?: []) as List<List>).findAll { (t - (it[0] as long)) <= SMOOTHING_WINDOW_MS }
+    win << [t, v]
+    state.soilWindow = win
+    // average, not median: with two alternating values the median flips between them
+    int n = win.size()
+    int avg = Math.round((win.collect { it[1] as int }.sum() as int) / (float) n) as int
+    def last = device.currentValue("soilMoisture")
+    if (last != null && Math.abs(avg - (last as int)) < SMOOTHING_MIN_CHANGE) {
+        logDebug "soil moisture reading ${v} %, average ${avg} % of ${n} - not reported (last ${last} %)"
+        return
+    }
+    sendEventLog("soilMoisture", avg, "%", n > 1 ? "soil moisture is ${avg} % (average of ${n} readings)" : null)
+    recordDryPoint(avg)
+}
+
+private void scheduleReport() {
+    unschedule("scheduledReport")
+    switch (reportInterval ?: "0") {
+        case "30":  runEvery30Minutes("scheduledReport"); break
+        case "60":  runEvery1Hour("scheduledReport"); break
+        case "180": schedule("0 ${new Random().nextInt(60)} */3 ? * *", "scheduledReport"); break
+        case "360": schedule("0 ${new Random().nextInt(60)} */6 ? * *", "scheduledReport"); break
+    }
+}
+
+// Send the value the driver holds now, even when unchanged: the 2-minute average while readings are
+// coming in, otherwise the latest reading (so it also catches up a change too small to report).
+def scheduledReport() {
+    List<List> win = ((state.soilWindow ?: []) as List<List>).findAll { (now() - (it[0] as long)) <= SMOOTHING_WINDOW_MS }
+    def value = win ? Math.round((win.collect { it[1] as int }.sum() as int) / (float) win.size()) as int : state.lastSoilReading
+    if (value == null) value = device.currentValue("soilMoisture")
+    if (value == null) return
+    sendEvent(name: "soilMoisture", value: value as int, unit: "%", isStateChange: true, descriptionText: "${device.displayName} soil moisture is ${value} % (scheduled report)")
+    logDebug "scheduled report: soil moisture ${value} %"
+    recordDryPoint(value as int)
+}
+
+// ======================================================================================
+//  Time to dry
+// ======================================================================================
+
+// Keeps the reported soil moisture history; a rise of WATERING_RISE or more starts a new dry-down.
+private void recordDryPoint(int v) {
+    List<List> hist = loadDryHistory()
+    if (hist && v >= ((hist[-1][1] as int) + WATERING_RISE)) {
+        log.info "${device.displayName}: watering detected (${hist[-1][1]} → ${v} %) - new dry-down"
+        hist = []
+    }
+    long t = now()
+    hist << [t, v]
+    List<List> kept = []
+    for (List p in hist) { if (t - (p[0] as long) <= DRY_KEEP_MS) kept << p }
+    if (kept.size() > DRY_KEEP_POINTS) kept = kept.takeRight(DRY_KEEP_POINTS)
+    state.dryHistory = kept
+    updateDryEstimate()
+}
+
+// History from state; on first use, seeded from this device's own soilMoisture events (newest first)
+private List<List> loadDryHistory() {
+    if (state.dryHistory != null) return (state.dryHistory as List<List>)
+    List<List> hist = []
+    try {
+        List evts = device.events([max: DRY_KEEP_POINTS]).findAll { it.name == "soilMoisture" && now() - it.date.time <= DRY_KEEP_MS }
+        evts = evts.sort { it.date.time }
+        for (e in evts) {
+            int v = (e.value as BigDecimal).intValue()
+            if (hist && v >= ((hist[-1][1] as int) + WATERING_RISE)) hist = []
+            hist << [e.date.time, v]
+        }
+        logDebug "time to dry: history seeded from ${hist.size()} past events"
+    } catch (ex) {
+        logDebug "time to dry: could not read past events (${ex})"
+    }
+    state.dryHistory = hist
+    return hist
+}
+
+// No valid estimate: "unknown", and no stale numbers left on the device page
+private void clearDryEstimate(boolean clearRate) {
+    sendEventLog("estimatedDryAt", "unknown", null)
+    if (device.currentValue("hoursToDry") != null) device.deleteCurrentState("hoursToDry")
+    if (clearRate && device.currentValue("dryingRate") != null) device.deleteCurrentState("dryingRate")
+}
+
+// Least-squares trend over the last DRY_TREND_MS of the history -> dryingRate, hoursToDry, estimatedDryAt
+private void updateDryEstimate() {
+    List<List> pts = []
+    long t = now()
+    for (List p in loadDryHistory()) { if (t - (p[0] as long) <= DRY_TREND_MS) pts << p }
+    def current = device.currentValue("soilMoisture")
+    if (pts.size() < 3 || ((pts[-1][0] as long) - (pts[0][0] as long)) < DRY_MIN_SPAN_MS || current == null) {
+        logDebug "time to dry: not enough history yet (${pts.size()} points)"
+        clearDryEstimate(true)
+        return
+    }
+    int n = pts.size()
+    double mx = 0, my = 0
+    for (List p in pts) { mx += (p[0] as long) / 3600000.0; my += (p[1] as int) }
+    mx /= n; my /= n
+    double sxx = 0, sxy = 0
+    for (List p in pts) {
+        double dx = (p[0] as long) / 3600000.0 - mx
+        sxx += dx * dx
+        sxy += dx * ((p[1] as int) - my)
+    }
+    if (sxx == 0) return
+    double slope = sxy / sxx                                 // % per hour (negative = drying)
+    BigDecimal rate = (slope * 24).toBigDecimal().setScale(1, BigDecimal.ROUND_HALF_UP)
+    sendEventLog("dryingRate", rate, "%/day")
+    int threshold = ((dryThreshold ?: 30) as int)
+    int cur = (current as BigDecimal).intValue()
+    if (cur <= threshold) {
+        sendEventLog("hoursToDry", 0, "h")
+        sendEventLog("estimatedDryAt", "dry now", null)
+        return
+    }
+    if (-rate < DRY_MIN_RATE) {
+        logDebug "time to dry: not drying (${rate} %/day)"
+        clearDryEstimate(false)
+        return
+    }
+    int hours = Math.round((cur - threshold) / -slope) as int
+    sendEventLog("hoursToDry", hours, "h")
+    sendEventLog("estimatedDryAt", new Date(t + hours * 3600000L).format("EEE d MMM HH:mm", location.timeZone), null,
+                 "estimated dry at ${new Date(t + hours * 3600000L).format('EEE d MMM HH:mm', location.timeZone)} (${hours} h, ${rate} %/day, ${n} points)")
 }
 
 private void settingEvent(String name, value, String unit) {
@@ -482,7 +637,7 @@ private void handleAttribute(Integer cluster, Integer attr, Integer type, String
         case 0x0405:
             if (attr == 0x0000) {
                 // ZG-303Z: the humidity cluster carries the SOIL moisture (matches DP 3 exactly); air humidity is DP 109
-                sendEventLog("soilMoisture", Math.round(v / 100.0) as Integer, "%")
+                soilReading(Math.round(v / 100.0) as int)
                 return
             }
             break
@@ -509,6 +664,7 @@ private void handleAttribute(Integer cluster, Integer attr, Integer type, String
 }
 
 def healthCheck() {
+    updateDryEstimate()                         // keeps hoursToDry counting down between soil changes
     long limit = ((offlineHours ?: 2) as Long) * 3600000L
     if (now() - ((state.lastRx ?: 0L) as Long) > limit && device.currentValue("healthStatus") != "offline") {
         sendEvent(name: "healthStatus", value: "offline", descriptionText: "${device.displayName} is offline")

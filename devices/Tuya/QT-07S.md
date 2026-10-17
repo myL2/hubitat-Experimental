@@ -38,7 +38,9 @@ No calibration or sampling settings.
 - Resistive probe: saturates at 100 % in wet / fertilised soil, reads ~20 points higher than the capacitive
   ZG-303Z in the same soil (66 vs 44 %). Use its own thresholds, not the other sensor's.
 - A button press or a soil change triggers a burst of 2–3 readings ~1–2 s apart that scatter by 6–8 points
-  (80 / 100 / 97); once settled it was steady (±2) for hours, so no smoothing was added.
+  (80 / 100 / 97); once settled it can still flip between two values 6–7 apart for minutes (InfluxDB:
+  ~30 flips in 4 min on 10-12). The driver now reports the 2-minute average, on changes of 2+ (no flips since).
+- Dry-down after watering: ~100 % for ~14 h, then a steady ~8–10 %/day in 2-point steps (driver: time to dry).
 - Reported every ~5 s just after pairing, then only on change.
 - **Tuya heartbeat every 4 h**: basic cluster `0x0001` (app version 0x50), `0xFFE2` = 56, `0xFFE4` = 0 (both
   undocumented; unchanged in air, dry soil and while watering). Also seen once: `0xFFCF` = 3840, `0xFFDF` string.
