@@ -147,7 +147,8 @@ def updateOperatingState(){
             if (parent.logEnable && currentState != "idle") { log.debug "updateOperatingState of ${virtualDevice}: ${currentState} -> idle" }
         }
     }
-    parent.updateHeatingPlantSwitch()
+    // A location event makes the Master update in its own execution (a direct parent call loses its state and timers).
+    sendLocationEvent(name: "myL2ThermostatZoneChanged", value: "${app.id}", descriptionText: "${app.label} changed", isStateChange: true)
 }
 
 // Sends only what changes, so routine valve reports don't re-send the same setpoint

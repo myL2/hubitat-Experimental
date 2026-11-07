@@ -11,6 +11,8 @@ definition(
 
 @groovy.transform.Field static final int PLANT_VERIFY_DELAY = 15   // seconds to wait for the plant to report
 @groovy.transform.Field static final int PLANT_MAX_ATTEMPTS = 3
+// Zones signal changes with this location event: state and runIn set while a child calls into the parent are lost.
+@groovy.transform.Field static final String ZONE_EVENT = "myL2ThermostatZoneChanged"
 
 preferences {
     page(name: "mainPage")
@@ -51,6 +53,7 @@ def initialize() {
         log.debug "child app: ${child.label}"
         subscribe(child.getThermostatDevice(), "thermostatOperatingState", allHandler)
     }
+    subscribe(location, ZONE_EVENT, zoneChangedHandler)
     if (heatingPlantHealth) subscribe(heatingPlantHealth, "healthStatus", plantHealthHandler)
     updateHeatingPlantSwitch()
     runEvery5Minutes(updateHeatingPlantSwitch)
@@ -63,6 +66,10 @@ def plantHealthHandler(evt) {
     } else if (evt.value == "online") {
         log.info "Heating plant relay '${evt.device}' is back online"
     }
+}
+
+def zoneChangedHandler(evt) {
+    updateHeatingPlantSwitch()
 }
 
 def allHandler(evt) {
@@ -100,7 +107,7 @@ def updateHeatingPlantSwitch(){
     String wanted = anyHeating ? "on" : "off"
     state.plantWanted = wanted
     if (heatingPlant.currentValue("switch") == wanted) return
-    if (logEnable) { log.debug "heatingPlant -> ${wanted.toUpperCase()}${anyHeating ? " (${requestingAreas})" : ''}" }
+    if (logEnable) { log.debug "heatingPlant -> ${wanted.toUpperCase()}${anyHeating ? " (zones: ${requestingAreas}, pumps on: ${pumpDevices.findAll { k, v -> (atomicState.pumps ?: [:])[k]?.on }.values()})" : ''}" }
     sendPlantCommand(wanted)
     state.plantAttempts = 1
     runIn(PLANT_VERIFY_DELAY, "verifyHeatingPlant")

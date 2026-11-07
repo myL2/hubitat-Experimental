@@ -163,7 +163,8 @@ def updateOperatingState() {
     }
     applyState(zone, heatingThermostats)
     if (parent.logEnable && previous != zone) { log.debug "updateOperatingState of ${app.label}: ${previous} -> ${zone} (${reason})" }
-    parent.updateHeatingPlantSwitch()
+    // A location event makes the Master update in its own execution (a direct parent call loses its state and timers).
+    sendLocationEvent(name: "myL2ThermostatZoneChanged", value: "${app.id}", descriptionText: "${app.label} changed", isStateChange: true)
 }
 
 // Commands only what changes: the relay(s), and each thermostat's operating state when it accepts one.
