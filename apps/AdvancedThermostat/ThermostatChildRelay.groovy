@@ -12,6 +12,7 @@ definition(
 /*
  *  Same control as Thermostat Child (hysteresis, windows, motion, Away mode), but the zone's
  *  heating is a relay: on while any of the zone's thermostats calls for heat, off when none do.
+ *  With "own operating state" the zone instead follows what each thermostat reports (TRVs decide).
  *  Each thermostat gives a setpoint (and its temperature, unless a separate sensor is chosen) and
  *  keeps its own hysteresis state. Thermostats can be physical or virtual: each one's operating
  *  state is mirrored to it when it supports setThermostatOperatingState, and the Master reads the
@@ -28,12 +29,17 @@ def mainPage() {
             input "thermostats", "capability.thermostat", title: "* Select Thermostat(s) (setpoint); the relay heats while any of them calls for heat", submitOnChange: true, required: true, multiple: true
             input "relays", "capability.switch", title: "${pump ? '' : '* '}Select Relay(s) that heat this zone${pump ? ' (optional with a pump: a floor without zone valves)' : ''}", submitOnChange: true, required: !pump, multiple: true
             input "pump", "capability.switch", title: "Distributor pump (optional): run by the Master while any zone using it heats", submitOnChange: true, required: false
-            input "tempSensor", "capability.temperatureMeasurement", title: "Temperature sensor (optional, used for every selected thermostat; default: each thermostat's own temperature)", submitOnChange: true, required: false
+            input "callSource", "enum", title: "Call for heat from", options: ["setpoint": "Temperature vs setpoint, with hysteresis", "operatingState": "Each thermostat's own operating state (TRVs, smart thermostats)"], defaultValue: "setpoint", submitOnChange: true, required: true
+            if (!ownState()) {
+                input "tempSensor", "capability.temperatureMeasurement", title: "Temperature sensor (optional, used for every selected thermostat; default: each thermostat's own temperature)", submitOnChange: true, required: false
+            }
             input "contactSensors", "capability.contactSensor", title: "Select Contact Sensor (that must be closed to start heating)", submitOnChange: true, required: false, multiple: true
             input "presenceSensors", "capability.motionSensor", title: "Select Motion Sensor (that must be active to start heating; none = not required)", submitOnChange: true, required: false, multiple: true
         }
         section("Other settings") {
-            input name: "hysteresis", type: "decimal", title: "Set Hysteresis (Difference to start/stop, in degrees 0.5 - 5.0)", defaultValue: 1.0, required: true
+            if (!ownState()) {
+                input name: "hysteresis", type: "decimal", title: "Set Hysteresis (Difference to start/stop, in degrees 0.5 - 5.0)", defaultValue: 1.0, required: true
+            }
             input name: "awayTemp", type: "number", title: "Set Temperature for Away Mode", defaultValue: 20
         }
     }
@@ -57,7 +63,8 @@ def initialize() {
         state.callStates = calls
     }
     subscribe(thermostatList(), "heatingSetpoint", allHandler)
-    subscribe(tempSensor ? [tempSensor] : thermostatList(), "temperature", allHandler)
+    subscribe(tempSensor && !ownState() ? [tempSensor] : thermostatList(), "temperature", allHandler)
+    if (ownState()) subscribe(thermostatList(), "thermostatOperatingState", allHandler)
     for (contactSensor in contactSensors) {
         subscribe(contactSensor, "contact", allHandler)
     }
@@ -65,9 +72,14 @@ def initialize() {
         subscribe(presenceSensor, "motion", allHandler)
     }
     subscribe(location, "mode", allHandler)
-    log.debug "initialized for ${thermostatList()} -> ${relays ?: 'no relays'}${pump ? ", pump: ${pump}" : ''} with settings: hysteresis: ${hysteresis}, awayTemp: ${awayTemp}, temperature from: ${tempSensor ?: 'each thermostat'}"
+    log.debug "initialized for ${thermostatList()} -> ${relays ?: 'no relays'}${pump ? ", pump: ${pump}" : ''} with settings: call from: ${ownState() ? 'own operating state' : "setpoint, hysteresis ${hysteresis}"}, awayTemp: ${awayTemp}, temperature from: ${tempSensor ?: 'each thermostat'}"
     app.updateLabel("${relays ? relays.join(', ') + ' -> ' : ''}${thermostatList().join(', ')}${pump ? " (pump: ${pump})" : ''}")
     updateOperatingState()
+}
+
+// The thermostats decide (V2 behaviour): the zone follows their reported operating state and never overwrites it.
+private boolean ownState() {
+    return settings.callSource == "operatingState"
 }
 
 // Installs from before multiple thermostats stored a single one under "thermostat".
@@ -78,11 +90,12 @@ private List thermostatList() {
 def allHandler(evt) {
     switch (evt.name) {
         case "heatingSetpoint":
+        case "thermostatOperatingState":
         case "mode":
             updateOperatingState()
             break
         case "temperature":
-            if (tempSensor) {
+            if (tempSensor && !ownState()) {
                 thermostatList().each { if (it.hasCommand("setTemperature")) it.setTemperature(evt.value) }
             }
             updateOperatingState()
@@ -103,6 +116,12 @@ def updateOperatingState() {
     Map temps = [:]
     thermostatList().each { tstat ->
         String id = tstat.id as String
+        if (ownState()) {
+            def reported = tstat.currentValue("temperature")
+            if (reported != null) temps[id] = reported as BigDecimal
+            calls[id] = tstat.currentValue("thermostatOperatingState") == "heating" ? "heating" : "idle"
+            return
+        }
         String current = oldCalls[id] ?: "idle"
         def temperature = (tempSensor ?: tstat).currentValue("temperature")
         def setpoint = tstat.currentValue("heatingSetpoint")
@@ -153,7 +172,7 @@ private void applyState(String zoneState, List heatingThermostats) {
     List heatingIds = heatingThermostats*.id
     thermostatList().each { tstat ->
         String wantedState = tstat.id in heatingIds ? "heating" : "idle"
-        if (tstat.hasCommand("setThermostatOperatingState") && tstat.currentValue("thermostatOperatingState") != wantedState) {
+        if (!ownState() && tstat.hasCommand("setThermostatOperatingState") && tstat.currentValue("thermostatOperatingState") != wantedState) {
             tstat.setThermostatOperatingState(wantedState)
         }
     }
