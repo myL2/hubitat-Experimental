@@ -32,12 +32,13 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import groovy.transform.Field
 
-@Field static final String APP_VERSION = "1.0.1"
+@Field static final String APP_VERSION = "1.0.2"
 @Field static final String HUB = "http://127.0.0.1:8080"
 @Field static final int HEALTH_TRIES = 8
 @Field static final long HEALTH_WAIT_MS = 2000
 @Field static final long STALE_JOB_MS = 5 * 60 * 1000
 @Field static final int KEEP_ISSUES = 20
+@Field static final String LOG_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss.SSS"
 @Field static final int KEEP_HISTORY = 48
 @Field static final String LAST_GOOD_FILE = "devbridge-lastgood.groovy"
 @Field static final List ACTIVE_PHASES = ["scheduled", "saving", "verifying", "rolling_back"]
@@ -239,30 +240,36 @@ private void collect() {
     def items = state.watched ?: [:]
     String bridgeKey = "app:${state.conn?.bridgeAppId}"
     Map all = [(bridgeKey): (items[bridgeKey] ?: [type: "app", id: state.conn?.bridgeAppId?.toString(), name: "myL2 Dev Bridge", errors: 0, warnings: 0, issues: []])] + items
-    // Cursor is a parsed log timestamp (never now()), so both sides use the same clock/zone.
-    Long since = state.logCursor as Long
-    Long newest = since
+    // Cursor is the newest log timestamp seen, kept as text: "yyyy-MM-dd HH:mm:ss.SSS" sorts like the time it names.
+    String since = state.logCursorText
+    if (since == null && state.logCursor != null) since = new Date(state.logCursor as Long).format(LOG_TIME_FORMAT)
+    String newest = since
     List fresh = []
 
     def lines = null
     try { lines = hubJson("/logs/past/json", null) } catch (Exception e) { log.warn "Dev Bridge Guardian: log read failed: ${e.message}" }
-    if (lines instanceof List) {
-        lines.each { raw ->
-            def f = raw.toString().split("\t")
-            if (f.size() < 3) return
-            Long ts = parseLogTime(f[0])
-            if (ts == null) return
+    if (lines instanceof List && lines) {
+        // Walk from the newest line and stop at the cursor, so each tick only touches lines it has not seen.
+        int n = lines.size()
+        boolean newestFirst = logTime(lines[0]) > logTime(lines[n - 1])
+        for (int i = 0; i < n; i++) {
+            String raw = lines[newestFirst ? i : n - 1 - i].toString()
+            String ts = logTime(raw)
+            if (ts.isEmpty()) continue
+            if (since != null && ts <= since) break
             if (newest == null || ts > newest) newest = ts
-            if (since != null && ts <= since) return
+            if (since == null) continue
+            def f = raw.split("\t", 4)
+            if (f.size() < 3) continue
             String level = f[1].trim().toUpperCase()
-            if (!(level in ["ERROR", "WARN"])) return
+            if (!(level in ["ERROR", "WARN"])) continue
             def src = f[2].split("\\|", 4)   // type|id|name|message
-            if (src.size() < 4) return
+            if (src.size() < 4) continue
             String key = "${src[0]}:${src[1]}"
             Map w = all[key]
-            if (!w) return
+            if (!w) continue
             if (level == "ERROR") w.errors = (w.errors ?: 0) + 1 else w.warnings = (w.warnings ?: 0) + 1
-            def issues = (w.issues ?: []) + [[t: f[0], level: level, msg: src[3].take(300)]]
+            def issues = (w.issues ?: []) + [[t: ts, level: level, msg: src[3].take(300)]]
             w.issues = issues.size() > KEEP_ISSUES ? issues.drop(issues.size() - KEEP_ISSUES) : issues
             if (level == "ERROR" || settings.notifyWarnings) fresh << "${w.name ?: key}: ${level} ${src[3].take(120)}"
         }
@@ -272,7 +279,8 @@ private void collect() {
         all.each { k, w -> w.errors = 0; w.warnings = 0; w.issues = [] }
         fresh = []
     }
-    if (newest != null) state.logCursor = newest
+    if (newest != null) state.logCursorText = newest
+    state.remove("logCursor")
 
     try {
         def jobs = hubJson("/logs/json", null)
@@ -294,12 +302,11 @@ private void collect() {
     if (fresh) notify("Dev Bridge monitor: ${fresh.size()} new issue(s)\n" + fresh.take(5).join("\n"))
 }
 
-private Long parseLogTime(String s) {
-    try {
-        return Date.parse("yyyy-MM-dd HH:mm:ss.SSS", s.trim()).time
-    } catch (Exception e) {
-        return null
-    }
+// The timestamp field of a hub log line, or "" when the line has none.
+private String logTime(raw) {
+    String line = raw?.toString() ?: ""
+    int tab = line.indexOf("\t")
+    return tab > 0 ? line.substring(0, tab).trim() : ""
 }
 
 private void notify(String msg) {
