@@ -33,6 +33,7 @@ metadata {
         attribute 'rtt', 'number'
         attribute 'healthStatus', 'enum', ['offline', 'online', 'unknown']
         attribute 'switchType', 'enum', ['flip', 'sync', 'button']
+        attribute 'travelRemaining', 'number'   // TS130F: estimated seconds to the end of the current move
 
         command 'configure', [[name: '*** will load all defaults! ***']]
         command 'push',      [[name: 'button number*', type: 'NUMBER', description: '1: Open, 2: Close, 3: Stop, 4: Step Open, 5: Step Close']]
@@ -310,6 +311,79 @@ void  setDirection() {
     }
 }
 
+// ===== TS130F movement: start/stop reports, wall buttons, estimated position while moving =====
+// moving state (0x0102 / 0xF000): 0 = opening, 1 = stopped, 2 = closing
+
+private void noteHubCommand(boolean isSetPosition, Integer target) {
+    state.lastHubCmdMs = now()
+    state.ts130fSetPos = isSetPosition
+    state.ts130fHubTarget = target
+}
+
+private Integer ts130fMovingState(Map descMap) {
+    if (descMap?.attrId == 'F000') { return zigbee.convertHexToInt(descMap.value) }
+    for (Map extra in (descMap?.additionalAttrs ?: [])) {
+        if (extra?.attrId == 'F000') { return zigbee.convertHexToInt(extra.value) }
+    }
+    return null
+}
+
+// Returns true when the report is a move start and needs no further position handling.
+private boolean ts130fMovement(int moving, Map descMap) {
+    boolean byHub = now() - ((state.lastHubCmdMs ?: 0) as Long) < 3000
+    Integer pos = descMap?.attrId == '0008' ? zigbee.convertHexToInt(descMap.value) : null
+    if (moving == 0 || moving == 2) {
+        if (state.ts130fMoving) { return true }   // repeated start report
+        boolean opening = (moving == 0) != (settings?.invertPosition == true)
+        state.ts130fMoving = true
+        state.ts130fMoveByHub = byHub
+        state.ts130fStartPos = pos != null ? pos : (device.currentValue('position') ?: 0) as int
+        state.ts130fStartMs = now()
+        state.ts130fOpening = opening
+        Integer hubTarget = byHub ? state.ts130fHubTarget as Integer : null
+        state.ts130fTarget = hubTarget != null ? hubTarget : (opening ? 100 : 0)
+        sendEvent(name: 'windowShade', value: opening ? 'opening' : 'closing', descriptionText: "${device.displayName} is ${opening ? 'opening' : 'closing'}")
+        if (!byHub) {
+            sendEvent(name: 'pushed', value: opening ? 1 : 2, isStateChange: true, type: 'physical',
+                      descriptionText: "${device.displayName} wall button ${opening ? 'open' : 'close'} pressed")
+            logInfo "wall button <b>${opening ? 'open' : 'close'}</b> pressed"
+        }
+        ts130fTick()
+        return true
+    }
+    if (moving == 1 && state.ts130fMoving) {
+        state.ts130fMoving = false
+        unschedule('ts130fTick')
+        sendEvent(name: 'travelRemaining', value: 0, unit: 's')
+        boolean midway = pos != null && pos > 0 && pos < 100
+        boolean hubStopped = byHub || (state.ts130fMoveByHub && state.ts130fSetPos)
+        if (midway && !hubStopped) {
+            sendEvent(name: 'pushed', value: 3, isStateChange: true, type: 'physical', descriptionText: "${device.displayName} wall button stop pressed")
+            logInfo "wall button <b>stop</b> pressed"
+        }
+    }
+    return false
+}
+
+// Estimates the position from the travel time; the stop report replaces it with the real one.
+void ts130fTick() {
+    if (!state.ts130fMoving) { return }
+    def calTime = device.currentValue('calibrationTime')
+    if (calTime == null || (calTime as BigDecimal) <= 0) { return }
+    BigDecimal ratePerSec = 100.0 / (calTime as BigDecimal)
+    BigDecimal elapsed = (now() - (state.ts130fStartMs as Long)) / 1000.0
+    int start = state.ts130fStartPos as int
+    int target = state.ts130fTarget as int
+    int estimate = state.ts130fOpening ? Math.min(target, start + (int) (elapsed * ratePerSec)) : Math.max(target, start - (int) (elapsed * ratePerSec))
+    BigDecimal remaining = (Math.abs(target - estimate) / ratePerSec).setScale(1, BigDecimal.ROUND_HALF_UP)
+    sendEvent(name: 'travelRemaining', value: remaining, unit: 's', descriptionText: "${device.displayName} reaches ${target}% in about ${remaining} s")
+    if (estimate != start || elapsed > 0) {
+        sendEvent(name: 'position', value: estimate, unit: '%', descriptionText: "${device.displayName} position is about ${estimate}% (estimated)")
+        sendEvent(name: 'level', value: estimate, unit: '%')
+    }
+    if (estimate != target) { runIn(1, 'ts130fTick', [overwrite: true]) }
+}
+
 private void calibrationReport(String hexValue) {
     if (hexValue == null) { return }
     logInfo "calibration is <b>${zigbee.convertHexToInt(hexValue) == 0 ? 'on' : 'off'}</b>"
@@ -456,6 +530,11 @@ void parseNonTuyaMessage(final Map descMap) {
                 if (extra?.attrId == 'F001') { calibrationReport(extra.value) }
                 if (extra?.attrId == 'F003') { calibrationTimeReport(extra.value) }
             }
+        }
+        // TS130F switches report only when a move starts (old position) and when it stops (new position)
+        if (isTS130F() && descMap?.command == '0A') {
+            Integer moving = ts130fMovingState(descMap)
+            if (moving != null && ts130fMovement(moving, descMap)) { return }
         }
         if (descMap?.command == '01' || descMap?.command == '0A') {     //read attribute response or reportResponse
             if (descMap?.data != null &&  descMap?.data[2] == '86') {
@@ -911,6 +990,7 @@ void refresh() {
 }
 
 void close() {  // 0 %
+    noteHubCommand(false, 0)
     if (mode == MODE_TILT || settings?.substituteOpenClose == true) {
         logDebug("sending command close ${settings?.substituteOpenClose == true ? 'substituted with setPosition(0)' : 'MODE_TILT'} ")
         setPosition(0)
@@ -937,6 +1017,7 @@ void close() {  // 0 %
 }
 
 void open() {   // 100 %
+    noteHubCommand(false, 100)
     if (mode == MODE_TILT || settings?.substituteOpenClose == true) {
         logDebug "sending command open : ${settings?.substituteOpenClose == true ? 'substituted with setPosition(100)' : 'MODE_TILT'} "
         setPosition(100)
@@ -985,6 +1066,7 @@ void startPositionChange(final String state) {
 }
 
 void stopPositionChange() {
+    noteHubCommand(false, null)
     int dpCommandStop = getDpCommandStop()
     logDebug "sending command stopPositionChange (${dpCommandStop})"
     restartPositionReportTimeout()
@@ -1029,6 +1111,7 @@ void setLevel(BigDecimal level, BigDecimal duration = null) {
 
 void setPosition(final BigDecimal positionParam) {
     int position = positionParam as int
+    noteHubCommand(true, position)
     if (position == null || position < 0 || position > 100) {
         throw new Exception("Invalid position ${position}. Position must be between 0 and 100 inclusive.")
     }

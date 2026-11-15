@@ -298,7 +298,7 @@
       "namespace": "myL2",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Zemismart/ZemismartZigbeeBlindMod3.groovy",
       "required": false,
-      "version": "1.3"
+      "version": "1.4"
     }
   ],
   "apps": [
