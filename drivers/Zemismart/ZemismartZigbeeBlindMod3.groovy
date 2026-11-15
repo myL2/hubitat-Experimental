@@ -16,7 +16,7 @@ def SimpleDateFormat sdf() {new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")}
 
 
 metadata {
-    definition(name: 'ZemiSmart Zigbee Blind Mod2', namespace: 'myL2', author: 'SebyM', importUrl: '', singleThreaded: true ) {
+    definition(name: 'ZemiSmart Zigbee Blind Mod3', namespace: 'myL2', author: 'SebyM', importUrl: 'https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Zemismart/ZemismartZigbeeBlindMod3.groovy', singleThreaded: true ) {
         capability 'Actuator'
         capability 'Configuration'
         capability 'HealthCheck'
@@ -32,6 +32,7 @@ metadata {
         attribute "lastCheckin", "string"
         attribute 'rtt', 'number'
         attribute 'healthStatus', 'enum', ['offline', 'online', 'unknown']
+        attribute 'switchType', 'enum', ['flip', 'sync', 'button']
 
         command 'configure', [[name: '*** will load all defaults! ***']]
         command 'push',      [[name: 'button number*', type: 'NUMBER', description: '1: Open, 2: Close, 3: Stop, 4: Step Open, 5: Step Close']]
@@ -107,7 +108,7 @@ metadata {
         fingerprint profileId:'0104', endpointId:'01', inClusters:'0004,0005,0006,0102,0000', outClusters:'0019,000A', model:'TS130F', manufacturer:'_TZ3000_fccpjz5z' ,deviceJoinName: 'Zigbee Curtain Module'        // not tested
         fingerprint profileId:'0104', endpointId:'01', inClusters:'0004,0005,0006,0102,0000', outClusters:'0019,000A', model:'TS130F', manufacturer:'_TZ3000_vd43bbfq' ,deviceJoinName: 'Zigbee Curtain Module'        // not tested
         fingerprint profileId:'0104', endpointId:'01', inClusters:'0004,0005,0006,0102,0000', outClusters:'0019,000A', model:'TS130F', manufacturer:'_TZ3000_ke7pzj5d' ,deviceJoinName: 'Zigbee Curtain Module'        // not tested
-        fingerprint profileId:'0104', endpointId:'01', inClusters:'0004,0005,0006,0102,0000', outClusters:'0019,000A', model:'TS130F', manufacturer:'_TZ3000_yruungrl' ,deviceJoinName: 'Nous B4Z Curtain Switch'      // not tested
+        fingerprint profileId:'0104', endpointId:'01', inClusters:'0004,0005,0006,0102,E001,0000', outClusters:'0019,000A', model:'TS130F', manufacturer:'_TZ3000_yruungrl' ,deviceJoinName: 'Nous B4Z Curtain Switch'
         //
         // defaults are :  open: 0, stop: 1,  close: 2
     }
@@ -115,17 +116,19 @@ metadata {
     preferences {
         input('enableInfoLog', 'bool', title: 'Enable descriptionText logging', required: true, defaultValue: true)
         input('enableDebugLog', 'bool', title: 'Enable debug logging', required: true, defaultValue: false)
-        input('mode', 'enum', title: 'Mode',
+        input('mode', 'enum', title: 'Mode (Tuya MCU motors only; TS130F switches ignore it)',
             description: '<li><b>lift</b> - motor moves until button pressed again</li>'
                     + '<li><b>tilt</b> - pressing button < 1.5s, movement stops on release'
                     + '; pressing button > 1.5s, motor moves until button pressed again</li>',
             options: MODE_MAP, required: true, defaultValue: '1')
-        input('direction', 'enum', title: 'Direction', options: DIRECTION_MAP, required: true, defaultValue: 0)
+        input('direction', 'enum', title: 'Direction (TS130F switches: motor reversal; ignored by the Nous B4Z)', options: DIRECTION_MAP, required: true, defaultValue: 0)
         input('maxClosedPosition', 'number', title: 'Max Closed Position', description: 'The max position value that window shade state should be set to closed', required: true, defaultValue: 1)
         input('minOpenPosition', 'number', title: 'Min Open Position', description: 'The min position value that window shade state should be set to open', required: true, defaultValue: 99)
 //        input('percentageAdjustOpen', 'number', title: 'Opening Position Adjust Percentage', description: 'Skew SetPosition open commands by this much absolute percentage', required: true, defaultValue: 0)
 //        input('percentageAdjustClose', 'number', title: 'Closing Position Adjust Percentage', description: 'Skew SetPosition close commands by this much absolute percentage', required: true, defaultValue: 0)
         input('defaultStepAmount', 'number', title: 'Default Step Amount', description: 'The default step amount', required: true, defaultValue: 10)
+        input('switchType', 'enum', title: '<b>Wall switch type</b> (TS130F curtain switches): <b>flip</b> switch, <b>sync</b> switch (factory default) or <b>button</b> (momentary)',
+            description: 'Unchanged', options: SWITCH_TYPE_MAP, required: false)
         input('advancedOptions', 'bool', title: 'Show Advanced options', description: 'These advanced options should have been already set correctly for your device/model when device was Configred', required: true, defaultValue: false)
         if (advancedOptions == true) {
             input('invertPosition', 'bool', title: 'Invert position reporting', description: 'Some devices report the position 0..100 inverted', required: true, defaultValue: false)
@@ -138,7 +141,12 @@ metadata {
 }
 
 @Field final String MODE_TILT = '0'
-@Field final Map MODE_MAP = [1: 'lift', 0: 'tilt', 2: '2', 3: '3', 4: '4', 5: '5']
+@Field final Map MODE_MAP = [1: 'lift', 0: 'tilt']
+// Tuya external switch type, cluster 0xE001 attribute 0xD030; values as zigbee2mqtt's switch_type_curtain
+@Field static final Map SWITCH_TYPE_MAP = ['0': 'flip', '1': 'sync', '2': 'button']
+@Field static final int CLUSTER_TUYA_SWITCH_TYPE = 0xE001
+@Field static final int ATTR_SWITCH_TYPE = 0xD030
+@Field static final int ATTR_MOTOR_REVERSAL = 0xF002
 @Field final Map MODE_MAP_REVERSE = MODE_MAP.collectEntries { [(it.value): it.key] }
 @Field final List MODES = MODE_MAP*.value
 @Field final Map DIRECTION_MAP = [0: 'forward', 1: 'reverse']
@@ -250,6 +258,7 @@ void configure(boolean fullInit = true) {
     // Must run async otherwise, one will block the other
     runIn(1, setMode)
     runIn(2, setDirection)
+    if (isTS130F()) { runIn(3, setSwitchType) }
 
     if (settings.enableInfoLog == null || fullInit == true) { device.updateSetting('enableInfoLog', [value: true, type: 'bool'])  }
     if (settings.advancedOptions == null || fullInit == true) { device.updateSetting('advancedOptions', [value: false, type: 'bool']) }
@@ -291,14 +300,53 @@ void  setDirection() {
     if (settings?.direction != null) {
         int directionValue = direction as int
         logDebug("setDirection: directionText=${DIRECTION_MAP[directionValue]}, directionValue=${directionValue}")
-        sendTuyaCommand(DP_ID_DIRECTION, DP_TYPE_ENUM, directionValue, 2)
+        if (isTS130F()) {
+            // TS130F switches have no Tuya MCU: direction is the window covering cluster's motor reversal attribute
+            sendZigbeeCommands(zigbee.writeAttribute(0x0102, ATTR_MOTOR_REVERSAL, DataType.ENUM8, directionValue, [destEndpoint: 0x01], 200)
+                + zigbee.readAttribute(0x0102, ATTR_MOTOR_REVERSAL, [destEndpoint: 0x01], 200))
+        } else {
+            sendTuyaCommand(DP_ID_DIRECTION, DP_TYPE_ENUM, directionValue, 2)
+        }
     }
 }
 
+private void calibrationReport(String hexValue) {
+    if (hexValue == null) { return }
+    logInfo "calibration is <b>${zigbee.convertHexToInt(hexValue) == 0 ? 'on' : 'off'}</b>"
+}
+
+private void calibrationTimeReport(String hexValue) {
+    if (hexValue == null) { return }
+    BigDecimal seconds = zigbee.convertHexToInt(hexValue) / 10.0
+    sendEvent(name: 'calibrationTime', value: seconds, unit: 's', descriptionText: "${device.displayName} calibration time is ${seconds} s")
+    logInfo "calibration time is <b>${seconds} s</b>"
+}
+
+private void motorReversalReport(String hexValue) {
+    if (hexValue == null) { return }
+    int reversal = zigbee.convertHexToInt(hexValue)
+    logInfo "direction (motor reversal) is <b>${DIRECTION_MAP[reversal] ?: reversal}</b>"
+    if (isTS130F() && settings?.direction != null && (settings.direction as int) != reversal) {
+        device.updateSetting('direction', [value: reversal.toString(), type: 'enum'])
+    }
+}
+
+void setSwitchType() {
+    List<String> cmds = []
+    if (settings?.switchType != null) {
+        logDebug("setSwitchType: ${SWITCH_TYPE_MAP[settings.switchType as String]}")
+        cmds += zigbee.writeAttribute(CLUSTER_TUYA_SWITCH_TYPE, ATTR_SWITCH_TYPE, DataType.ENUM8, settings.switchType as int, [destEndpoint: 0x01], 200)
+    }
+    cmds += zigbee.readAttribute(CLUSTER_TUYA_SWITCH_TYPE, ATTR_SWITCH_TYPE, [destEndpoint: 0x01], 200)
+    sendZigbeeCommands(cmds)
+}
+
 void setMode() {
+    if (isTS130F()) { return }   // lift/tilt is a Tuya MCU motor setting; TS130F switches do not have it
     if (settings?.mode != null) {
         int modeValue = mode as int
-        logDebug("setMode: modeText=${MODE_MAP[modeValue].value}, modeValue=${modeValue}")
+        if (!MODE_MAP.containsKey(modeValue)) { return }   // old placeholder values 2-5 were never real modes
+        logDebug("setMode: modeText=${MODE_MAP[modeValue]}, modeValue=${modeValue}")
         sendTuyaCommand(DP_ID_MODE, DP_TYPE_ENUM, modeValue, 2)
     }
 }
@@ -401,6 +449,14 @@ void parseNonTuyaMessage(final Map descMap) {
     else if (descMap?.clusterId == '0102' || descMap?.cluster == '0102') {
         // windowCovering standard cluster
         logDebug "windowCovering standard cluster descMap=${descMap}"
+        // a read of several attributes answers them in one message: the first in attrId/value, the rest here
+        if (descMap?.command in ['01', '0A']) {
+            for (Map extra in (descMap?.additionalAttrs ?: [])) {
+                if (extra?.attrId == 'F002') { motorReversalReport(extra.value) }
+                if (extra?.attrId == 'F001') { calibrationReport(extra.value) }
+                if (extra?.attrId == 'F003') { calibrationTimeReport(extra.value) }
+            }
+        }
         if (descMap?.command == '01' || descMap?.command == '0A') {     //read attribute response or reportResponse
             if (descMap?.data != null &&  descMap?.data[2] == '86') {
                 logWarn "read attribute response: unsupported cluster ${descMap?.clusterId} attribute ${descMap.data[1] + descMap.data[0]} (status ${descMap.data[2]})"
@@ -419,16 +475,13 @@ void parseNonTuyaMessage(final Map descMap) {
                     // TODO !
                 }
                 else if (descMap?.attrId == 'F001') {
-                    logInfo "WindowCovering cluster ${descMap?.cluster} attribute UpDownConfirm ${descMap?.attrId} value : ${zigbee.convertHexToInt(descMap?.value)}"
-                    // TODO !
+                    calibrationReport(descMap?.value)
                 }
                 else if (descMap?.attrId == 'F002') {
-                    logInfo "WindowCovering cluster ${descMap?.cluster} attribute ControlBack ${descMap?.attrId} value : ${zigbee.convertHexToInt(descMap?.value)}"
-                    // TODO !
+                    motorReversalReport(descMap?.value)
                 }
                 else if (descMap?.attrId == 'F003') {
-                    logInfo "WindowCovering cluster ${descMap?.cluster} attribute ScheduleTime ${descMap?.attrId} value : ${zigbee.convertHexToInt(descMap?.value)}"
-                    // TODO!
+                    calibrationTimeReport(descMap?.value)
                 }
                 else {
                     logInfo "read attribute response: cluster ${descMap?.cluster} attribute ${descMap?.attrId} value : ${zigbee.convertHexToInt(descMap?.value)}"
@@ -448,6 +501,17 @@ void parseNonTuyaMessage(final Map descMap) {
         }
         else {
             logWarn "windowCovering unprocessed command ${descMap?.command}"
+        }
+    }
+    else if ((descMap?.clusterId == 'E001' || descMap?.cluster == 'E001')) {
+        if (descMap?.attrId == 'D030' && descMap?.value != null) {
+            String type = SWITCH_TYPE_MAP[zigbee.convertHexToInt(descMap.value).toString()] ?: descMap.value
+            sendEvent(name: 'switchType', value: type, descriptionText: "${device.displayName} wall switch type is ${type}")
+            logInfo "wall switch type is <b>${type}</b>"
+        } else if (descMap?.command == '04') {
+            logInfo "switch type write ${descMap.data?.getAt(0) == '00' ? '<b>OK</b>' : 'failed: ' + descMap.data}"
+        } else {
+            logDebug "E001 cluster descMap=${descMap}"
         }
     }
     else if ((descMap?.clusterId == '0006' || descMap?.cluster == '0006') && descMap?.attrId == '8001' && descMap?.command in ['01', '0A']) {
@@ -840,6 +904,10 @@ private void updateWindowShadeArrived(int positionParam=null) {
 void refresh() {
     logDebug 'Refresh called...'
     sendZigbeeCommands(zigbee.onOffRefresh())
+    if (isTS130F()) {
+        sendZigbeeCommands(zigbee.readAttribute(0x0102, [0x0008, tuyaCalibration, ATTR_MOTOR_REVERSAL, moesCalibrationTime], [destEndpoint: 0x01], 200)
+            + zigbee.readAttribute(CLUSTER_TUYA_SWITCH_TYPE, ATTR_SWITCH_TYPE, [destEndpoint: 0x01], 200))
+    }
 }
 
 void close() {  // 0 %
@@ -1162,14 +1230,15 @@ void setTS130FCalibrationTime(int val) {
 }
 
 void setTS130FCalibrationOn() {
-    logInfo "setting TS130F Calibration<b>On</b>}"                    // On is 0 ?
-    List<String> cmd =  zigbee.writeAttribute(0x0102, tuyaCalibration, DataType.ENUM8, 1, [destEndpoint:0x01], delay = 200) + zigbee.readAttribute(0x0102, tuyaCalibration, [destEndpoint:0x01], delay = 200)
+    logInfo "setting TS130F Calibration <b>On</b>"
+    // 0 = calibration on, 1 = off (zigbee2mqtt cover_calibration)
+    List<String> cmd =  zigbee.writeAttribute(0x0102, tuyaCalibration, DataType.ENUM8, 0, [destEndpoint:0x01], delay = 200) + zigbee.readAttribute(0x0102, tuyaCalibration, [destEndpoint:0x01], delay = 200)
     sendZigbeeCommands(cmd)	
 }
 
 void setTS130FCalibrationOff() {
-    logInfo "setting TS130F Calibration<b>Off</b>"                  // Off is 1 ?
-    List<String> cmd = zigbee.writeAttribute(0x0102, tuyaCalibration, DataType.ENUM8, 0, [destEndpoint:0x01], delay = 200) + zigbee.readAttribute(0x0102, tuyaCalibration, [destEndpoint:0x01], delay = 200)
+    logInfo "setting TS130F Calibration <b>Off</b>"
+    List<String> cmd = zigbee.writeAttribute(0x0102, tuyaCalibration, DataType.ENUM8, 1, [destEndpoint:0x01], delay = 200) + zigbee.readAttribute(0x0102, tuyaCalibration, [destEndpoint:0x01], delay = 200)
     sendZigbeeCommands(cmd)
 }
 

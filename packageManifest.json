@@ -294,11 +294,11 @@
     },
     {
       "id": "b8a4f46c-e023-470c-879d-b2dc3a0791d3",
-      "name": "ZemiSmart Zigbee Blind Mod2",
+      "name": "ZemiSmart Zigbee Blind Mod3",
       "namespace": "myL2",
-      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Zemismart/ZemismartZigbeeBlindMod2.groovy",
+      "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Zemismart/ZemismartZigbeeBlindMod3.groovy",
       "required": false,
-      "version": "1.2"
+      "version": "1.3"
     }
   ],
   "apps": [
