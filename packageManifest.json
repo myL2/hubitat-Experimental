@@ -138,7 +138,7 @@
       "namespace": "kkossev",
       "location": "https://raw.githubusercontent.com/myL2/hubitat-Experimental/main/drivers/Tuya/TuyaZigbeeMeteringPlug.groovy",
       "required": false,
-      "version": "1.0"
+      "version": "1.1"
     },
     {
       "id": "2c589b5d-aa30-4cff-a57e-eb363465eb62",
