@@ -28,6 +28,7 @@ def mainPage() {
                 state.error = false
                 def masterAttributes = showAndGetMasterAttributes()
                 input "slaves", "capability.${getCapability()}", title: "Select Light(s)", submitOnChange: true, required: true, multiple: true
+                input "offOnly", "bool", title: "Only turn off: any change on the switch turns the light(s) off, never on (e.g. an \"all lights off\" button)", defaultValue: false, submitOnChange: true
                 if(slaves){
                     Boolean p = parent.checkSlavesExist(getSlavesId(), getMasterId(), 4, false)
                     if(!p){
@@ -69,7 +70,7 @@ def initialize() {
         subscribe(master, "switch", switchHandler) // switch
         subscribe(master, "level", setLevelHandler) // set level
         log.debug "initialize"
-        updateAppName("${master} -> ${slaves[0]}")
+        updateAppName("${master} -> ${slaves[0]}${offOnly ? ' (off only)' : ''}")
     }
     else{
         updateAppName("ERROR: ${state.errorMsg}")
@@ -103,6 +104,10 @@ def updateAppName(def string){
 // switch on and off
 def switchHandler(evt) {
     if(evt.value == "on" || evt.value == "off"){
+        if(offOnly){
+            slaves?.off()   // regardless of their reported state, which can be stale
+            return
+        }
         for(slave in slaves){
             if(slave.currentValue("switch")=="off"){
                 slave.on()
@@ -117,6 +122,10 @@ def switchHandler(evt) {
 def setLevelHandler(evt){
     def level = evt.value.toFloat()
     level = level.toInteger()
+    if(offOnly){
+        slaves?.off()   // regardless of their reported state, which can be stale
+        return
+    }
     if(level>0){
         slaves?.on()
     }else{
