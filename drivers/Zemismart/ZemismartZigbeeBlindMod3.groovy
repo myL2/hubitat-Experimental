@@ -391,7 +391,9 @@ private void calibrationReport(String hexValue) {
 
 private void calibrationTimeReport(String hexValue) {
     if (hexValue == null) { return }
-    BigDecimal seconds = zigbee.convertHexToInt(hexValue) / 10.0
+    int raw = zigbee.convertHexToInt(hexValue)
+    // Groovy division strips zeros (300 / 10.0 = 3E+1), so keep whole seconds as an integer
+    def seconds = raw % 10 == 0 ? (raw / 10) as int : (raw / 10.0).setScale(1, BigDecimal.ROUND_HALF_UP)
     sendEvent(name: 'calibrationTime', value: seconds, unit: 's', descriptionText: "${device.displayName} calibration time is ${seconds} s")
     logInfo "calibration time is <b>${seconds} s</b>"
 }
