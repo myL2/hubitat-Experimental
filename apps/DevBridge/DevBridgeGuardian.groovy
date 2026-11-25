@@ -21,8 +21,14 @@
  *
  * =======================================================================================
  *
+ *  3. Monitoring push. Hourly heartbeat (with new hub-log errors) and a daily issues report,
+ *     plus the device inventory when it changes, POSTed straight to the monitoring web app
+ *     (hubitat.myL2.ro) -- not through Hubitat's cloud relay. Configured by the Bridge's
+ *     monitor_push tool.
+ *
  *  Changelog:
  *
+ *  v1.1.0 (2026-11-25) - Monitoring push to the web app: heartbeat, issues, inventory, 7-day error log
  *  v1.0.1 (2026-09-30) - Self-update progress stored in atomicState so the Bridge sees each phase live
  *  v1.0.0 (2026-09-30) - First release
  *
@@ -31,8 +37,14 @@
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import groovy.transform.Field
+import java.security.MessageDigest
 
-@Field static final String APP_VERSION = "1.0.2"
+@Field static final String APP_VERSION = "1.1.0"
+@Field static final int SCHEMA_VERSION = 1
+@Field static final long DAY_MS = 24L * 3600 * 1000
+@Field static final int ERRLOG_MAX = 300
+@Field static final int ERRORS_PER_PUSH = 100
+@Field static final Map DEFAULT_THRESHOLDS = [batteryPct: 20, offlineMainsHours: 24, offlineBatteryHours: 72]
 @Field static final String HUB = "http://127.0.0.1:8080"
 @Field static final int HEALTH_TRIES = 8
 @Field static final long HEALTH_WAIT_MS = 2000
@@ -73,6 +85,14 @@ preferences {
                           (w.stats ? ", CPU ${w.stats.pct}%, state ${w.stats.stateSize} B" : "")
             }
         }
+        section("Monitoring push") {
+            Map pc = state.push ?: [:]
+            if (!pc.enabled) {
+                paragraph "Off. Configured from the Bridge's monitor_push tool."
+            } else {
+                paragraph "To ${pc.ingestUrl}/${pc.hubKey}<br>" + (state.pushLog ?: []).reverse().take(6).collect { "${fmt(it.t)} ${it.kind} ${it.bytes} B -> ${it.status}" }.join("<br>")
+            }
+        }
         section("Last self-update") {
             def job = atomicState?.job
             if (!job) {
@@ -106,6 +126,7 @@ def initialize() {
         case "30": runEvery30Minutes("monitorTick"); break
         default:   runEvery5Minutes("monitorTick")
     }
+    schedulePush()
     log.info "Dev Bridge Guardian v${APP_VERSION} monitoring every ${settings.checkInterval ?: 5} min"
 }
 
@@ -137,7 +158,7 @@ def getStatus() {
 def getMonitor() {
     return [bridge: (state.bridge ?: [:]) + [issues: state.bridgeIssues], watched: state.watched ?: [:], history: state.history ?: [],
             lastTick: state.lastTick, checkIntervalMinutes: (settings.checkInterval ?: "5") as Integer,
-            autoRestore: settings.autoRestore == true, lastGoodVersion: state.lastGoodVersion]
+            autoRestore: settings.autoRestore == true, lastGoodVersion: state.lastGoodVersion, push: pushStatus()]
 }
 
 // Clears the collected errors/warnings of one watched item (or all, key == null).
@@ -245,6 +266,7 @@ private void collect() {
     if (since == null && state.logCursor != null) since = new Date(state.logCursor as Long).format(LOG_TIME_FORMAT)
     String newest = since
     List fresh = []
+    Map errlog = state.errlog ?: [:]
 
     def lines = null
     try { lines = hubJson("/logs/past/json", null) } catch (Exception e) { log.warn "Dev Bridge Guardian: log read failed: ${e.message}" }
@@ -265,6 +287,7 @@ private void collect() {
             if (!(level in ["ERROR", "WARN"])) continue
             def src = f[2].split("\\|", 4)   // type|id|name|message
             if (src.size() < 4) continue
+            if (state.push?.enabled) errlogAdd(errlog, ts, level, src[0], src[1], src[2], src[3])
             String key = "${src[0]}:${src[1]}"
             Map w = all[key]
             if (!w) continue
@@ -281,6 +304,7 @@ private void collect() {
     }
     if (newest != null) state.logCursorText = newest
     state.remove("logCursor")
+    if (state.push?.enabled && since != null) state.errlog = errlogPrune(errlog)
 
     try {
         def jobs = hubJson("/logs/json", null)
@@ -307,6 +331,244 @@ private String logTime(raw) {
     String line = raw?.toString() ?: ""
     int tab = line.indexOf("\t")
     return tab > 0 ? line.substring(0, tab).trim() : ""
+}
+
+// ======================================================================================
+//  Monitoring push (to the web app, not through the cloud relay)
+// ======================================================================================
+
+// Called by the Bridge's monitor_push tool. Keys: enabled, ingestUrl, hubKey, secret.
+def configurePush(Map cfg) {
+    Map pc = (state.push ?: [:]) + cfg.findAll { k, v -> v != null && k in ["enabled", "ingestUrl", "hubKey", "secret"] }
+    if (pc.ingestUrl) pc.ingestUrl = pc.ingestUrl.toString().replaceAll('/+$', '')
+    if (pc.enabled && !(pc.ingestUrl && pc.hubKey && pc.secret)) throw new IllegalArgumentException("enabled push needs ingestUrl, hubKey and secret")
+    state.push = pc
+    schedulePush()
+    return pushStatus()
+}
+
+def pushStatus() {
+    Map pc = state.push ?: [:]
+    return [enabled: pc.enabled == true, ingestUrl: pc.ingestUrl, hubKey: pc.hubKey, secretSet: pc.secret ? true : false,
+            thresholds: thresholds(), errorCursor: state.errAck, errlogEntries: (state.errlog ?: [:]).size(),
+            inventoryHash: state.invHash, inventorySentAt: state.invSentAt, outbox: (state.outbox ?: [:]).keySet() as List,
+            recent: (state.pushLog ?: []).reverse().take(10)]
+}
+
+// Builds the payload of one kind without sending it (preview), or sends it now.
+def pushNow(String kind, boolean send) {
+    Map p = buildPayload(kind)
+    if (send) postPayload(kind, p)
+    return [kind: kind, bytes: JsonOutput.toJson(p).length(), sent: send, payload: p]
+}
+
+private void schedulePush() {
+    unschedule("pushHourly")
+    unschedule("pushDaily")
+    if (!state.push?.enabled) return
+    // Spread hubs over the hour so the app never gets them all at once.
+    int m = (Math.abs((state.push.hubKey ?: "x").hashCode()) % 60) as int
+    schedule("${(m * 7) % 60} ${m} * * * ?", "pushHourly")
+    schedule("${(m * 11) % 60} ${(m + 30) % 60} 6 * * ?", "pushDaily")
+}
+
+def pushHourly() {
+    if (!state.push?.enabled) return
+    postPayload("heartbeat", buildPayload("heartbeat"))
+    if (state.outbox?.issues) postPayload("issues", buildPayload("issues"))   // retry a failed daily report
+    if (state.outbox?.inventory || state.invHash != state.invHashSent || now() - ((state.invSentAt ?: 0) as Long) > 7 * DAY_MS) postPayload("inventory", buildPayload("inventory"))
+}
+
+def pushDaily() {
+    if (!state.push?.enabled) return
+    postPayload("issues", buildPayload("issues"))
+}
+
+private Map buildPayload(String kind) {
+    Map p = [schemaVersion: SCHEMA_VERSION, kind: kind, hubKey: state.push?.hubKey, hubTime: isoNow(), guardianVersion: APP_VERSION]
+    List devs = deviceRows()
+    switch (kind) {
+        case "heartbeat":
+            Map summary = deviceSummary(devs)
+            p.hub = hubInfo()
+            p.devices = summary.counts
+            p.inventoryHash = state.invHash
+            List errs = errorsSince(state.errAck)
+            p.errors = errs.take(ERRORS_PER_PUSH)
+            p.errorsMore = errs.size() > ERRORS_PER_PUSH
+            break
+        case "issues":
+            Map summary = deviceSummary(devs)
+            p.thresholds = thresholds()
+            p.devices = summary.counts
+            p.issues = summary.issues
+            break
+        case "inventory":
+            p.columns = INV_COLUMNS
+            p.rows = devs.collect { d -> INV_COLUMNS.collect { c -> d[c] } }
+            break
+        default:
+            throw new IllegalArgumentException("kind must be heartbeat, issues or inventory")
+    }
+    return p
+}
+
+@Field static final List RADIO_PROTOCOLS = ["zigbee", "zwave", "matter", "bluetooth"]
+@Field static final List INV_COLUMNS = ["id", "name", "deviceName", "type", "protocol", "room", "parentId", "disabled", "battery", "health", "lastActivity"]
+
+// One row per device (children included), from the hub's device list.
+private List deviceRows() {
+    def data = hubJson("/hub2/devicesList", null)
+    List top = (data instanceof Map && data.devices instanceof List) ? data.devices : (data instanceof List ? data : [])
+    List rows = []
+    List stack = top.collect { [e: it, parent: null] }
+    while (stack) {
+        Map item = stack.remove(0)
+        def d = item.e?.data
+        if (!(d instanceof Map)) continue
+        Map st = [:]
+        for (s in (d.currentStates ?: [])) st[s.key] = s.value
+        String proto = d.isZigbee ? "zigbee" : d.isZwave ? "zwave" : d.isMatter ? "matter" : d.isBluetooth ? "bluetooth" :
+                       d.isVirtual ? "virtual" : d.hubMesh || d.isLinked ? "mesh" : d.isNetwork ? "lan" : "other"
+        rows << [id: d.id, name: d.name, deviceName: (d.secondaryName && d.secondaryName != d.type) ? d.secondaryName : null, type: d.type,
+                 protocol: proto, room: d.roomName ?: null, parentId: item.parent, disabled: d.disabled == true,
+                 battery: st.battery != null ? (st.battery as BigDecimal).intValue() : null, health: st.healthStatus,
+                 lastActivity: d.lastActivity, children: (item.e.children ?: []).collect { it?.data?.id }]
+        for (c in (item.e.children ?: [])) stack << [e: c, parent: d.id]
+    }
+    state.invHash = md5(JsonOutput.toJson(rows.collect { r -> INV_COLUMNS.findAll { it != "lastActivity" && it != "battery" && it != "health" }.collect { r[it] } }))
+    return rows
+}
+
+// Counts plus the devices that break a threshold. A parent counts as active when any child is.
+private Map deviceSummary(List rows) {
+    Map th = thresholds()
+    Map byId = rows.collectEntries { [(it.id): it] }
+    long nowMs = now()
+    Map counts = [total: rows.size(), disabled: 0, battery: 0, batteryLow: 0, offline: 0, healthOffline: 0]
+    List issues = []
+    for (r in rows) {
+        List why = []
+        if (r.disabled) { counts.disabled++; why << "disabled" }
+        if (r.battery != null) {
+            counts.battery++
+            if (r.battery < (th.batteryPct as Integer)) { counts.batteryLow++; why << "batteryLow" }
+        }
+        if (r.health == "offline") { counts.healthOffline++; why << "healthOffline" }
+        if (!r.disabled && r.protocol in RADIO_PROTOCOLS) {   // software devices are often quiet by design
+            Long last = parseIso(r.lastActivity)
+            for (cid in r.children) { Long c = parseIso(byId[cid]?.lastActivity); if (c != null && (last == null || c > last)) last = c }
+            int hours = (r.battery != null ? th.offlineBatteryHours : th.offlineMainsHours) as Integer
+            if (last == null || nowMs - last > hours * 3600000L) { counts.offline++; why << "silent" }
+        }
+        if (why) issues << [id: r.id, name: r.name, type: r.type, protocol: r.protocol, room: r.room, battery: r.battery,
+                            health: r.health, lastActivity: r.lastActivity, issues: why]
+    }
+    return [counts: counts, issues: issues]
+}
+
+private Map hubInfo() {
+    def h = location.hub
+    Map info = [name: location.name, hubName: h?.name, firmware: h?.firmwareVersionString, uptimeSec: h?.uptime, localIP: h?.localIP,
+                timeZone: location.timeZone?.ID]
+    info.freeMemoryKB = hubNumber("/hub/advanced/freeOSMemory")
+    info.temperatureC = hubNumber("/hub/advanced/internalTempCelsius")
+    info.databaseSizeMB = hubNumber("/hub/advanced/databaseSize")
+    try {
+        def hd = hubJson("/hub2/hubData", null)
+        if (hd instanceof Map) {
+            info.alerts = hd.alerts instanceof Map ? hd.alerts.findAll { k, v -> v == true }.keySet() as List : null
+        }
+    } catch (Exception e) { info.hubDataError = e.message?.take(100) }
+    return info
+}
+
+private hubNumber(String path) {
+    try {
+        String t = null
+        httpGet([uri: HUB, path: path, textParser: true, timeout: 10]) { resp -> t = readText(resp) }
+        return t?.trim()?.isNumber() ? t.trim() as BigDecimal : null
+    } catch (Exception e) {
+        return null
+    }
+}
+
+private Map thresholds() {
+    return DEFAULT_THRESHOLDS + ((state.thresholds ?: [:]) as Map)
+}
+
+// 7-day error/warning log: one entry per source + message pattern, with a count.
+private void errlogAdd(Map errlog, String ts, String level, String srcType, String srcId, String srcName, String msg) {
+    String pattern = msg.replaceAll(/\d+/, "#").take(200)
+    String key = md5("${srcType}|${srcId}|${level}|${pattern}").take(16)
+    Map e = errlog[key]
+    if (e) {
+        e.count = (e.count ?: 1) + 1
+        if (ts > e.last) { e.last = ts; e.msg = msg.take(300) }
+        if (ts < e.first) e.first = ts
+    } else {
+        errlog[key] = [level: level, srcType: srcType, srcId: srcId, srcName: srcName, msg: msg.take(300), first: ts, last: ts, count: 1]
+    }
+}
+
+private Map errlogPrune(Map errlog) {
+    String cutoff = new Date(now() - 7 * DAY_MS).format(LOG_TIME_FORMAT)
+    Map kept = errlog.findAll { k, e -> e.last >= cutoff }
+    if (kept.size() > ERRLOG_MAX) kept = kept.sort { a, b -> b.value.last <=> a.value.last }.take(ERRLOG_MAX)
+    return kept
+}
+
+// Entries seen after the cursor the app last acknowledged, oldest first.
+private List errorsSince(String cursor) {
+    Map errlog = state.errlog ?: [:]
+    return errlog.findAll { k, e -> cursor == null || e.last > cursor }.collect { k, e -> [key: k] + e }.sort { it.last }
+}
+
+private void postPayload(String kind, Map p) {
+    Map pc = state.push ?: [:]
+    if (!(pc.ingestUrl && pc.hubKey && pc.secret)) return
+    String body = JsonOutput.toJson(p)
+    Map params = [uri: "${pc.ingestUrl}/${pc.hubKey}", contentType: "application/json", requestContentType: "application/json",
+                  headers: [Authorization: "Bearer ${pc.secret}"], body: body, timeout: 30]
+    state.outbox = (state.outbox ?: [:]) + [(kind): [t: now()]]
+    String errCursor = (kind == "heartbeat" && p.errors) ? p.errors[-1].last : null
+    asynchttpPost("pushResponse", params, [kind: kind, bytes: body.length(), errCursor: errCursor, invHash: kind == "inventory" ? state.invHash : null])
+}
+
+def pushResponse(resp, Map data) {
+    int status = resp?.status ?: 0
+    boolean ok = status >= 200 && status < 300
+    pushLogAdd([t: now(), kind: data.kind, bytes: data.bytes, status: status ?: (resp?.errorMessage ?: "no response")])
+    if (!ok) {
+        log.warn "Dev Bridge Guardian: ${data.kind} push failed (${status}): ${resp?.errorMessage ?: ''}"
+        return
+    }
+    state.outbox = (state.outbox ?: [:]).findAll { k, v -> k != data.kind }
+    if (data.kind == "inventory") { state.invHashSent = data.invHash; state.invSentAt = now() }
+    def r = null
+    try { r = resp.data ? new JsonSlurper().parseText(resp.data.toString()) : null } catch (Exception e) { }
+    if (r instanceof Map) {
+        if (r.thresholds instanceof Map) state.thresholds = r.thresholds.findAll { k, v -> k in DEFAULT_THRESHOLDS.keySet() && v instanceof Number }
+        if (r.errorCursorAck) state.errAck = r.errorCursorAck.toString()
+    }
+}
+
+private void pushLogAdd(Map entry) {
+    def l = (state.pushLog ?: []) + [entry]
+    state.pushLog = l.size() > 24 ? l.drop(l.size() - 24) : l
+}
+
+private String md5(String text) {
+    return MessageDigest.getInstance("MD5").digest(text.getBytes("UTF-8")).encodeHex().toString()
+}
+
+private String isoNow() {
+    return new Date().format("yyyy-MM-dd'T'HH:mm:ssXXX", location.timeZone)
+}
+
+private Long parseIso(s) {
+    if (!s) return null
+    try { return Date.parse("yyyy-MM-dd'T'HH:mm:ssZ", s.toString()).time } catch (Exception e) { return null }
 }
 
 private void notify(String msg) {

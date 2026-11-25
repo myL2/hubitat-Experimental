@@ -32,6 +32,7 @@
  *
  *  Changelog:
  *
+ *  v1.2.0 (2026-11-25) - monitor_push tool: configure, preview and send the Guardian's monitoring push to the web app
  *  v1.1.5 (2026-10-02) - Hub 4xx (e.g. deleted device id) answered as not found, without an error log entry
  *  v1.1.4 (2026-10-02) - read_file / write_file tools for the hub File Manager (e.g. custom driver profiles)
  *  v1.1.3 (2026-09-30) - Namespace/name read only from the definition() call, resolving constants (e.g. namespace: sNamespace)
@@ -48,7 +49,7 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import groovy.transform.Field
 
-@Field static final String APP_VERSION = "1.1.5"
+@Field static final String APP_VERSION = "1.2.0"
 @Field static final String HUB = "http://127.0.0.1:8080"
 @Field static final List SUPPORTED_PROTOCOLS = ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"]
 
@@ -203,6 +204,7 @@ private Map callTool(String name, Map args) {
             case "self_update":        result = selfUpdate(reqStr(args.source, "source")); break
             case "self_update_status": result = selfUpdateStatus(); break
             case "monitor_report":     result = monitorReport(args.refresh == true, args.clear); break
+            case "monitor_push":       result = monitorPush(args); break
             case "watch":              result = watch(args.action?.toString() ?: "list", args.sourceType?.toString(), args.id?.toString()); break
             case "read_file":          result = readFile(reqFileName(args.name)); break
             case "write_file":         result = writeFile(reqFileName(args.name), reqStr(args.content, "content")); break
@@ -283,6 +285,11 @@ private List toolDefinitions() {
         [name: "monitor_report", description: "Guardian monitoring: Bridge health history, and for the Bridge and each watched app/device the errors/warnings logged since last cleared, recent messages, runtime stats and scheduled jobs.",
          inputSchema: [type: "object", properties: [refresh: [type: "boolean", description: "Collect logs/stats now instead of returning the last scheduled check"],
                        clear: [type: "string", description: "Reset error/warning counts after reading: 'all' or a key such as 'dev:251'"]]]],
+        [name: "monitor_push", description: "Guardian's push of monitoring data to the web app (hubitat.myL2.ro), sent directly from the hub, not via the cloud relay. action: status; configure (enabled, ingestUrl, hubKey, secret); preview or send (kind: heartbeat, issues, inventory).",
+         inputSchema: [type: "object", properties: [action: [type: "string", enum: ["status", "configure", "preview", "send"]],
+                       kind: [type: "string", enum: ["heartbeat", "issues", "inventory"]], enabled: [type: "boolean"],
+                       ingestUrl: [type: "string", description: "e.g. https://hubitat.myL2.ro/api/ingest/v1 (hubKey is appended)"],
+                       hubKey: [type: "string"], secret: [type: "string"]], required: ["action"]]],
         [name: "watch", description: "Manage the Guardian watch list of apps/devices under development. action: add, remove or list.",
          inputSchema: [type: "object", properties: [action: [type: "string", enum: ["add", "remove", "list"]],
                        sourceType: [type: "string", enum: ["dev", "app"]], id: idProp], required: ["action"]]],
@@ -564,6 +571,17 @@ private Map monitorReport(boolean refresh, clear) {
     Map report = refresh ? g.collectNow() : g.getMonitor()
     if (clear) g.clearIssues(clear == "all" ? null : clear.toString())
     return report
+}
+
+private monitorPush(Map args) {
+    def g = guardianApp()
+    switch (args.action?.toString()) {
+        case "status":    return g.pushStatus()
+        case "configure": return g.configurePush([enabled: args.enabled, ingestUrl: args.ingestUrl, hubKey: args.hubKey, secret: args.secret])
+        case "preview":   return g.pushNow(reqStr(args.kind, "kind"), false)
+        case "send":      return g.pushNow(reqStr(args.kind, "kind"), true)
+        default: throw new IllegalArgumentException("action must be status, configure, preview or send")
+    }
 }
 
 private Map watch(String action, String sourceType, String id) {

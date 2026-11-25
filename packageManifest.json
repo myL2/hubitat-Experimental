@@ -360,7 +360,7 @@
       "required": false,
       "oauth": true,
       "primary": true,
-      "version": "1.1.5"
+      "version": "1.2.0"
     },
     {
       "id": "82f119b1-05e8-4cd8-ad5b-534f72b54fcd",
@@ -370,7 +370,7 @@
       "required": false,
       "oauth": false,
       "primary": false,
-      "version": "1.0.2"
+      "version": "1.1.0"
     },
     {
       "id": "1e414e00-1e9f-462e-b0e9-ed0f04d85b48",
