@@ -28,6 +28,7 @@
  *
  *  Changelog:
  *
+ *  v1.1.1 (2026-11-26) - Safety Monitor alerts and hub boot time in the heartbeat; error cursor is a sequence number (DST-safe); times ISO 8601 with offset; log scan stops at the last line seen
  *  v1.1.0 (2026-11-25) - Monitoring push to the web app: heartbeat, issues, inventory, 7-day error log
  *  v1.0.1 (2026-09-30) - Self-update progress stored in atomicState so the Bridge sees each phase live
  *  v1.0.0 (2026-09-30) - First release
@@ -39,7 +40,7 @@ import groovy.json.JsonSlurper
 import groovy.transform.Field
 import java.security.MessageDigest
 
-@Field static final String APP_VERSION = "1.1.0"
+@Field static final String APP_VERSION = "1.1.1"
 @Field static final int SCHEMA_VERSION = 1
 @Field static final long DAY_MS = 24L * 3600 * 1000
 @Field static final int ERRLOG_MAX = 300
@@ -127,6 +128,8 @@ def initialize() {
         default:   runEvery5Minutes("monitorTick")
     }
     schedulePush()
+    unsubscribe()
+    subscribe(location, "hsmAlert", "hsmAlertHandler")
     log.info "Dev Bridge Guardian v${APP_VERSION} monitoring every ${settings.checkInterval ?: 5} min"
 }
 
@@ -265,8 +268,14 @@ private void collect() {
     String since = state.logCursorText
     if (since == null && state.logCursor != null) since = new Date(state.logCursor as Long).format(LOG_TIME_FORMAT)
     String newest = since
+    String sinceHash = state.logCursorHash
+    String newestHash = sinceHash
+    // Stop at the exact line seen last (text times repeat in the autumn DST hour); 2 h back is the fallback.
+    String floor = since ? new Date(Date.parse(LOG_TIME_FORMAT, since).time - 2 * 3600000L).format(LOG_TIME_FORMAT) : null
+    boolean first = true
     List fresh = []
     Map errlog = state.errlog ?: [:]
+    long errSeq = (state.errSeq ?: 0) as Long
 
     def lines = null
     try { lines = hubJson("/logs/past/json", null) } catch (Exception e) { log.warn "Dev Bridge Guardian: log read failed: ${e.message}" }
@@ -278,8 +287,9 @@ private void collect() {
             String raw = lines[newestFirst ? i : n - 1 - i].toString()
             String ts = logTime(raw)
             if (ts.isEmpty()) continue
-            if (since != null && ts <= since) break
-            if (newest == null || ts > newest) newest = ts
+            String h = md5(raw)
+            if (sinceHash != null ? (h == sinceHash || ts < floor) : (since != null && ts <= since)) break
+            if (first) { newest = ts; newestHash = h; first = false }
             if (since == null) continue
             def f = raw.split("\t", 4)
             if (f.size() < 3) continue
@@ -287,7 +297,7 @@ private void collect() {
             if (!(level in ["ERROR", "WARN"])) continue
             def src = f[2].split("\\|", 4)   // type|id|name|message
             if (src.size() < 4) continue
-            if (state.push?.enabled) errlogAdd(errlog, ts, level, src[0], src[1], src[2], src[3])
+            if (state.push?.enabled) errSeq = errlogAdd(errlog, errSeq, ts, level, src[0], src[1], src[2], src[3])
             String key = "${src[0]}:${src[1]}"
             Map w = all[key]
             if (!w) continue
@@ -303,6 +313,8 @@ private void collect() {
         fresh = []
     }
     if (newest != null) state.logCursorText = newest
+    if (newestHash != null) state.logCursorHash = newestHash
+    state.errSeq = errSeq
     state.remove("logCursor")
     if (state.push?.enabled && since != null) state.errlog = errlogPrune(errlog)
 
@@ -344,6 +356,8 @@ def configurePush(Map cfg) {
     if (pc.enabled && !(pc.ingestUrl && pc.hubKey && pc.secret)) throw new IllegalArgumentException("enabled push needs ingestUrl, hubKey and secret")
     state.push = pc
     schedulePush()
+    unsubscribe()
+    subscribe(location, "hsmAlert", "hsmAlertHandler")
     return pushStatus()
 }
 
@@ -393,6 +407,9 @@ private Map buildPayload(String kind) {
             p.hub = hubInfo()
             p.devices = summary.counts
             p.inventoryHash = state.invHash
+            List alerts = (state.hsmLog ?: []).findAll { (it.seq as Long) > ((state.hsmAck instanceof Number) ? state.hsmAck as Long : 0L) }
+            p.hsmStatus = location.hsmStatus
+            p.hsmAlerts = alerts.take(ERRORS_PER_PUSH)
             List errs = errorsSince(state.errAck)
             p.errors = errs.take(ERRORS_PER_PUSH)
             p.errorsMore = errs.size() > ERRORS_PER_PUSH
@@ -433,7 +450,7 @@ private List deviceRows() {
         rows << [id: d.id, name: d.name, deviceName: (d.secondaryName && d.secondaryName != d.type) ? d.secondaryName : null, type: d.type,
                  protocol: proto, room: d.roomName ?: null, parentId: item.parent, disabled: d.disabled == true,
                  battery: st.battery != null ? (st.battery as BigDecimal).intValue() : null, health: st.healthStatus,
-                 lastActivity: d.lastActivity, children: (item.e.children ?: []).collect { it?.data?.id }]
+                 lastActivity: isoOut(parseIso(d.lastActivity)), children: (item.e.children ?: []).collect { it?.data?.id }]
         for (c in (item.e.children ?: [])) stack << [e: c, parent: d.id]
     }
     state.invHash = md5(JsonOutput.toJson(rows.collect { r -> INV_COLUMNS.findAll { it != "lastActivity" && it != "battery" && it != "health" }.collect { r[it] } }))
@@ -445,7 +462,7 @@ private Map deviceSummary(List rows) {
     Map th = thresholds()
     Map byId = rows.collectEntries { [(it.id): it] }
     long nowMs = now()
-    Map counts = [total: rows.size(), disabled: 0, battery: 0, batteryLow: 0, offline: 0, healthOffline: 0]
+    Map counts = [total: rows.size(), disabled: 0, battery: 0, batteryLow: 0, silent: 0, healthOffline: 0]
     List issues = []
     for (r in rows) {
         List why = []
@@ -459,7 +476,7 @@ private Map deviceSummary(List rows) {
             Long last = parseIso(r.lastActivity)
             for (cid in r.children) { Long c = parseIso(byId[cid]?.lastActivity); if (c != null && (last == null || c > last)) last = c }
             int hours = (r.battery != null ? th.offlineBatteryHours : th.offlineMainsHours) as Integer
-            if (last == null || nowMs - last > hours * 3600000L) { counts.offline++; why << "silent" }
+            if (last == null || nowMs - last > hours * 3600000L) { counts.silent++; why << "silent" }
         }
         if (why) issues << [id: r.id, name: r.name, type: r.type, protocol: r.protocol, room: r.room, battery: r.battery,
                             health: r.health, lastActivity: r.lastActivity, issues: why]
@@ -469,7 +486,10 @@ private Map deviceSummary(List rows) {
 
 private Map hubInfo() {
     def h = location.hub
-    Map info = [name: location.name, hubName: h?.name, firmware: h?.firmwareVersionString, uptimeSec: h?.uptime, localIP: h?.localIP,
+    Long up = h?.uptime as Long
+    Long boot = up != null ? now() - up * 1000L : null
+    Map info = [name: location.name, hubName: h?.name, firmware: h?.firmwareVersionString, uptimeSec: up,
+                bootTime: boot != null ? isoOut(boot - boot % 60000L) : null, localIP: h?.localIP,
                 timeZone: location.timeZone?.ID]
     info.freeMemoryKB = hubNumber("/hub/advanced/freeOSMemory")
     info.temperatureC = hubNumber("/hub/advanced/internalTempCelsius")
@@ -498,7 +518,9 @@ private Map thresholds() {
 }
 
 // 7-day error/warning log: one entry per source + message pattern, with a count.
-private void errlogAdd(Map errlog, String ts, String level, String srcType, String srcId, String srcName, String msg) {
+// Returns the next sequence number; each new or updated entry gets one, and the app acknowledges by it.
+private long errlogAdd(Map errlog, long seq, String ts, String level, String srcType, String srcId, String srcName, String msg) {
+    seq++
     String pattern = msg.replaceAll(/\d+/, "#").take(200)
     String key = md5("${srcType}|${srcId}|${level}|${pattern}").take(16)
     Map e = errlog[key]
@@ -506,22 +528,36 @@ private void errlogAdd(Map errlog, String ts, String level, String srcType, Stri
         e.count = (e.count ?: 1) + 1
         if (ts > e.last) { e.last = ts; e.msg = msg.take(300) }
         if (ts < e.first) e.first = ts
+        e.seq = seq
     } else {
-        errlog[key] = [level: level, srcType: srcType, srcId: srcId, srcName: srcName, msg: msg.take(300), first: ts, last: ts, count: 1]
+        errlog[key] = [level: level, srcType: srcType, srcId: srcId, srcName: srcName, msg: msg.take(300), first: ts, last: ts, count: 1, seq: seq]
     }
+    return seq
 }
 
 private Map errlogPrune(Map errlog) {
     String cutoff = new Date(now() - 7 * DAY_MS).format(LOG_TIME_FORMAT)
     Map kept = errlog.findAll { k, e -> e.last >= cutoff }
-    if (kept.size() > ERRLOG_MAX) kept = kept.sort { a, b -> b.value.last <=> a.value.last }.take(ERRLOG_MAX)
+    if (kept.size() > ERRLOG_MAX) kept = kept.sort { a, b -> (b.value.seq ?: 0) <=> (a.value.seq ?: 0) }.take(ERRLOG_MAX)
     return kept
 }
 
-// Entries seen after the cursor the app last acknowledged, oldest first.
-private List errorsSince(String cursor) {
+// Entries changed after the sequence number the app last acknowledged, oldest change first.
+private List errorsSince(ack) {
+    long a = (ack instanceof Number) ? ack as Long : 0L
     Map errlog = state.errlog ?: [:]
-    return errlog.findAll { k, e -> cursor == null || e.last > cursor }.collect { k, e -> [key: k] + e }.sort { it.last }
+    return errlog.findAll { k, e -> ((e.seq ?: 0) as Long) > a }.collect { k, e ->
+        [key: k, seq: e.seq, level: e.level, srcType: e.srcType, srcId: e.srcId, srcName: e.srcName, msg: e.msg,
+         first: logIso(e.first), last: logIso(e.last), count: e.count]
+    }.sort { it.seq }
+}
+
+private String logIso(String ts) {
+    try { return isoOut(Date.parse(LOG_TIME_FORMAT, ts, location.timeZone).time) } catch (Exception e) { return null }
+}
+
+private String isoOut(Long t) {
+    return t == null ? null : new Date(t).format("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", location.timeZone)
 }
 
 private void postPayload(String kind, Map p) {
@@ -531,8 +567,9 @@ private void postPayload(String kind, Map p) {
     Map params = [uri: "${pc.ingestUrl}/${pc.hubKey}", contentType: "application/json", requestContentType: "application/json",
                   headers: [Authorization: "Bearer ${pc.secret}"], body: body, timeout: 30]
     state.outbox = (state.outbox ?: [:]) + [(kind): [t: now()]]
-    String errCursor = (kind == "heartbeat" && p.errors) ? p.errors[-1].last : null
-    asynchttpPost("pushResponse", params, [kind: kind, bytes: body.length(), errCursor: errCursor, invHash: kind == "inventory" ? state.invHash : null])
+    Long errCursor = (kind == "heartbeat" && p.errors) ? p.errors[-1].seq as Long : null
+    Long hsmCursor = (kind == "heartbeat" && p.hsmAlerts) ? p.hsmAlerts[-1].seq as Long : null
+    asynchttpPost("pushResponse", params, [kind: kind, bytes: body.length(), errCursor: errCursor, hsmCursor: hsmCursor, invHash: kind == "inventory" ? state.invHash : null])
 }
 
 def pushResponse(resp, Map data) {
@@ -549,8 +586,23 @@ def pushResponse(resp, Map data) {
     try { r = resp.data ? new JsonSlurper().parseText(resp.data.toString()) : null } catch (Exception e) { }
     if (r instanceof Map) {
         if (r.thresholds instanceof Map) state.thresholds = r.thresholds.findAll { k, v -> k in DEFAULT_THRESHOLDS.keySet() && v instanceof Number }
-        if (r.errorCursorAck) state.errAck = r.errorCursorAck.toString()
+        if (r.errorCursorAck instanceof Number) state.errAck = r.errorCursorAck as Long
+        if (r.hsmCursorAck instanceof Number) state.hsmAck = r.hsmCursorAck as Long
     }
+}
+
+// Safety Monitor alerts (intrusion, water, smoke, ...), kept 7 days for the heartbeat.
+def hsmAlertHandler(evt) {
+    if (!state.push?.enabled) return
+    long seq = ((state.hsmSeq ?: 0) as Long) + 1
+    state.hsmSeq = seq
+    def data = null
+    try { data = evt.data ? new JsonSlurper().parseText(evt.data.toString()) : null } catch (Exception e) { data = evt.data?.toString()?.take(300) }
+    Map a = [seq: seq, time: isoOut(evt.date?.time ?: now()), alert: evt.value, description: evt.descriptionText?.take(300),
+             data: data, hsmStatus: location.hsmStatus]
+    long cutoff = now() - 7 * DAY_MS
+    List l = (state.hsmLog ?: []).findAll { (parseIso(it.time) ?: 0L) >= cutoff } + [a]
+    state.hsmLog = l.size() > 200 ? l.drop(l.size() - 200) : l
 }
 
 private void pushLogAdd(Map entry) {
@@ -568,6 +620,7 @@ private String isoNow() {
 
 private Long parseIso(s) {
     if (!s) return null
+    try { return Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", s.toString()).time } catch (Exception e) { }
     try { return Date.parse("yyyy-MM-dd'T'HH:mm:ssZ", s.toString()).time } catch (Exception e) { return null }
 }
 
