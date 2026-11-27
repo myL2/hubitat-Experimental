@@ -73,6 +73,7 @@ def initialize() {
     }
     subscribe(location, "mode", allHandler)
     log.debug "initialized for ${thermostatList()} -> ${relays ?: 'no relays'}${pump ? ", pump: ${pump}" : ''} with settings: call from: ${ownState() ? 'own operating state' : "setpoint, hysteresis ${hysteresis}"}, awayTemp: ${awayTemp}, temperature from: ${tempSensor ?: 'each thermostat'}"
+    scheduleRelayRefresh()
     app.updateLabel("${relays ? relays.join(', ') + ' -> ' : ''}${thermostatList().join(', ')}${pump ? " (pump: ${pump})" : ''}")
     updateOperatingState()
 }
@@ -110,6 +111,7 @@ def allHandler(evt) {
 
 def updateOperatingState() {
     unschedule(updateOperatingState)
+    if (!state.relayRefreshScheduled) scheduleRelayRefresh()   // installs from before the hourly refresh
     BigDecimal hyst = (hysteresis ?: 1.0) as BigDecimal
     Map oldCalls = state.callStates ?: [:]
     Map calls = [:]
@@ -180,6 +182,30 @@ private void applyState(String zoneState, List heatingThermostats) {
     String wanted = zoneState == "heating" ? "on" : "off"
     relays?.each { relay ->
         if (relay.currentValue("switch") != wanted) {
+            if (wanted == "on") relay.on() else relay.off()
+        }
+    }
+}
+
+// Relays report only on change; a relay that drops out unreported would otherwise stay wrong for good.
+private void scheduleRelayRefresh() {
+    int m = ((app.id as Long) % 60) as int
+    schedule("${(m * 7) % 60} ${m} * * * ?", "refreshRelays")
+    state.relayRefreshScheduled = true
+}
+
+def refreshRelays() {
+    List devs = ((relays ?: []) + (pump ? [pump] : [])).findAll { it.hasCommand("refresh") }
+    devs.each { it.refresh() }
+    if (relays) runIn(30, "afterRelayRefresh")
+}
+
+// The Master corrects the pump; this corrects the zone relays the refresh found in the wrong state.
+def afterRelayRefresh() {
+    String wanted = getOperatingState() == "heating" ? "on" : "off"
+    relays?.each { relay ->
+        if (relay.currentValue("switch") != wanted) {
+            log.warn "${app.label}: ${relay} reported ${relay.currentValue('switch')} on refresh, zone wants ${wanted}; switching it ${wanted}"
             if (wanted == "on") relay.on() else relay.off()
         }
     }

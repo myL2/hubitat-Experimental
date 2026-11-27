@@ -57,6 +57,18 @@ def initialize() {
     if (heatingPlantHealth) subscribe(heatingPlantHealth, "healthStatus", plantHealthHandler)
     updateHeatingPlantSwitch()
     runEvery5Minutes(updateHeatingPlantSwitch)
+    schedulePlantRefresh()
+}
+
+// The plant relay reports only on change; the 5-minute check corrects it once a refresh shows the real state.
+private void schedulePlantRefresh() {
+    int m = ((app.id as Long) % 60) as int
+    schedule("${(m * 11) % 60} ${(m + 30) % 60} * * * ?", "refreshPlant")
+    state.plantRefreshScheduled = true
+}
+
+def refreshPlant() {
+    [heatingPlant, heatingPlantHealth].findAll { it?.hasCommand("refresh") }.unique { it.id }.each { it.refresh() }
 }
 
 // The relay driver pings the device periodically; offline = several unanswered pings.
@@ -81,6 +93,7 @@ def allHandler(evt) {
 }
 
 def updateHeatingPlantSwitch(){
+    if (!state.plantRefreshScheduled) schedulePlantRefresh()   // installs from before the hourly refresh
     def requestingAreas = []
     def anyHeating = false
     Map pumpDevices = [:]
